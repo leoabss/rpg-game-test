@@ -2,7 +2,7 @@
 
 [sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
 sky_top_color = Color(0.36, 0.5, 0.72, 1)
-sky_horizon_color = Color(0.82, 0.74, 0.62, 1)
+sky_horizon_color = Color(0.85, 0.78, 0.68, 1)
 ground_bottom_color = Color(0.2, 0.17, 0.14, 1)
 ground_horizon_color = Color(0.82, 0.74, 0.62, 1)
 sun_angle_max = 20.0
@@ -13,8 +13,8 @@ sky_material = SubResource("Sky_mat")
 [resource]
 background_mode = 2
 sky = SubResource("Sky_main")
-ambient_light_source = 3
-ambient_light_color = Color(0.75, 0.7, 0.65, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.5, 0.62, 0.85, 1)
 ambient_light_energy = 0.55
 tonemap_mode = 2
 tonemap_exposure = 1.0
@@ -36,10 +36,10 @@ glow_blend_mode = 1
 glow_hdr_threshold = 0.85
 glow_hdr_scale = 2.0
 volumetric_fog_enabled = true
-volumetric_fog_density = 0.012
-volumetric_fog_albedo = Color(0.95, 0.88, 0.78, 1)
-volumetric_fog_emission = Color(0.04, 0.035, 0.03, 1)
-volumetric_fog_anisotropy = 0.4
+volumetric_fog_density = 0.005
+volumetric_fog_albedo = Color(0.85, 0.85, 0.9, 1)
+volumetric_fog_emission = Color(0.015, 0.018, 0.025, 1)
+volumetric_fog_anisotropy = 0.2
 volumetric_fog_length = 80.0
 volumetric_fog_ambient_inject = 0.3
 adjustment_enabled = true

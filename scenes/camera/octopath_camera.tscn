@@ -4,17 +4,17 @@
 
 [sub_resource type="CameraAttributesPractical" id="CamAttrs"]
 dof_blur_far_enabled = true
-dof_blur_far_distance = 23.0
-dof_blur_far_transition = 12.0
+dof_blur_far_distance = 19.0
+dof_blur_far_transition = 14.0
 dof_blur_near_enabled = true
-dof_blur_near_distance = 11.0
-dof_blur_near_transition = 4.0
-dof_blur_amount = 0.12
+dof_blur_near_distance = 11.5
+dof_blur_near_transition = 3.0
+dof_blur_amount = 0.1
 
 [node name="OctopathCamera" type="Camera3D"]
-transform = Transform3D(1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025, 0, 10, 15.588)
+transform = Transform3D(1, 0, 0, 0, 0.951057, -0.309017, 0, 0.309017, 0.951057, 0, 5.526, 13.315)
 attributes = SubResource("CamAttrs")
 current = true
-fov = 30.0
+fov = 28.0
 far = 200.0
 script = ExtResource("1_cam")

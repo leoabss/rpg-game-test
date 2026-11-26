@@ -66,8 +66,9 @@ assets/textures/         Texturas de terreno/props
 ## Look HD-2D — dónde ajustar
 
 - **`resources/hd2d_environment.tres`**: tonemap Filmic, glow/bloom, SSAO, niebla volumétrica, saturación/contraste, cielo y luz ambiente.
-- **Cámara** (`octopath_camera.gd`, exports en el nodo): `pitch_degrees` (30), `distance` (18), `field_of_view` (30), `follow_smoothing`, y DOF relativo a la distancia (`dof_far_margin`, `dof_near_margin`, transiciones, `dof_blur_amount`). El DOF se recalcula en `_ready()` (o llamando `apply_dof()`), así que los valores del sub-recurso en la escena se sobreescriben.
-- **Sol**: `Sun` en el nivel — `light_angular_distance` controla la suavidad de las sombras (PCSS).
-- **Faroles**: `scenes/props/lamp_placeholder.tscn` (OmniLight3D cálida con sombra y aporte a la niebla).
+- **Cámara** (`octopath_camera.gd`, `@tool`, exports en el nodo `OctopathCamera`): `pitch_degrees` (18), `distance` (14), `field_of_view` (28), `focus_offset`, `follow_smoothing`, y DOF relativo a la distancia (`dof_far_margin`, `dof_near_margin`, transiciones, `dof_blur_amount`). Los cambios se ven en vivo en el editor; el DOF del sub-recurso de la escena se sobreescribe desde el script.
+  - Cámara baja = personajes vistos casi de lado → generar sprites en PixelLab con vista "side" / "low top-down".
+- **Iluminación** (nodo `Lighting` del nivel, `scripts/levels/hd2d_lighting.gd`, `@tool`): color/intensidad del sol, `sun_elevation_degrees` (bajo = sombras largas), `sun_azimuth_degrees`, `shadow_softness`, `ambient_color` (azulado = sombras frías), `ambient_energy`, niebla. Es la fuente de verdad: sobreescribe el `Sun` y el Environment compartido. **No poner transforms escritas a mano en luces**: si la base no es exactamente ortonormal, Godot ve "escala" y muestra ⚠ en el nodo.
+- **Faroles**: `scenes/props/lamp_placeholder.tscn` + `scripts/props/street_lamp.gd` (exports por instancia: color, energía, alcance, halo en niebla). La luz cuelga de un brazo, separada del poste: si una OmniLight queda justo encima de un poste con sombras, el poste tapa un cono hacia abajo y aparece un círculo oscuro en el suelo.
 - **Viñeta**: `scenes/ui/vignette.tscn` → parámetros del shader (`intensity`, `radius`, `softness`, `vignette_color`).
 - Calidad de sombras en `project.godot` (`[rendering]`).

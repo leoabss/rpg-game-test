@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/props/tree_placeholder.tscn" id="5_tree"]
 [ext_resource type="PackedScene" path="res://scenes/props/lamp_placeholder.tscn" id="6_lamp"]
 [ext_resource type="PackedScene" path="res://scenes/ui/vignette.tscn" id="7_vig"]
+[ext_resource type="Script" path="res://scripts/levels/hd2d_lighting.gd" id="8_light"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_grass"]
 albedo_color = Color(0.42, 0.55, 0.3, 1)
@@ -37,15 +38,22 @@ size = Vector2(36, 3)
 environment = ExtResource("1_env")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.866, 0, -0.5, -0.383, 0.643, -0.663, 0.3215, 0.766, 0.557, 0, 20, 0)
-light_color = Color(1, 0.93, 0.82, 1)
-light_energy = 1.2
-light_angular_distance = 2.0
-light_volumetric_fog_energy = 0.6
+transform = Transform3D(0.500000, 0.000000, 0.866025, 0.406574, 0.882948, -0.234736, -0.764655, 0.469472, 0.441474, 0, 20, 0)
+light_color = Color(1, 0.82, 0.6, 1)
+light_energy = 2.2
+light_angular_distance = 1.5
+light_volumetric_fog_energy = 0.4
 shadow_enabled = true
-shadow_blur = 1.5
+shadow_bias = 0.05
+shadow_blur = 1.0
 directional_shadow_mode = 1
-directional_shadow_max_distance = 60.0
+directional_shadow_split_1 = 0.15
+directional_shadow_max_distance = 50.0
+
+[node name="Lighting" type="Node" parent="." node_paths=PackedStringArray("sun", "world_environment")]
+script = ExtResource("8_light")
+sun = NodePath("../Sun")
+world_environment = NodePath("../WorldEnvironment")
 
 [node name="Ground" type="StaticBody3D" parent="."]
 
@@ -116,10 +124,10 @@ transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, 15, 0, 13)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, -3)
 
 [node name="Lamp2" parent="Lamps" instance=ExtResource("6_lamp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 3)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2.5, 0, 3)
 
 [node name="Lamp3" parent="Lamps" instance=ExtResource("6_lamp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 2.5)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -5, 0, 2.5)
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
 

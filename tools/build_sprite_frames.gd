@@ -14,13 +14,16 @@ extends SceneTree
 ##   - Sin metadata.json: escanea la carpeta buscando `<anim>/<direccion>/*.png`
 ##     (frames) y `<estado>/rotations/<direccion>.png` (1 frame).
 ##   - sprite_import.json opcional en la carpeta del export para personalizar:
-##     { "aliases": {"walking-8-frames": "walk"}, "fps": {"walk": 10},
-##       "hit_frame": {"attack": 3}, "loop": {"attack": false} }
+##     { "aliases": {"Cross_Punch": "attack"}, "fps": {"walk": 10},
+##       "loop": {"attack": false},
+##       "hit_frame": {"attack": "auto"} }   # o un int, o {"default": "auto", "down": 4}
 ##
 ## Qué genera: animaciones "<estado>_<direccion>" (idle_down, walk_up_left...),
 ## con FPS/loop por estado, y metadatos que usa player.gd:
-##   hit_frames (Dictionary estado->frame del golpe), foot_offset_px,
+##   hit_frames ({estado: {direccion: frame}}), foot_offset_px,
 ##   body_height_px, frame_height_px.
+## Clips con lienzos/pies distintos se alinean por la línea de pies en un
+## lienzo común (AtlasTexture con margin).
 ## Las animaciones de "rotations" (estáticas) solo se usan si no hay una
 ## animación real para ese mismo estado y dirección.
 
@@ -75,46 +78,84 @@ func build(out_path: String) -> int:
 		push_error("No se encontraron frames en %s" % _src)
 		return 1
 
+	# Cargar texturas e imágenes y medir cada clip.
+	# PixelLab puede exportar clips con lienzos distintos (p.ej. 48x48 y 68x68)
+	# y con los pies a distinta altura. Se alinea cada clip por la línea de
+	# pies (su bottom opaco más bajo) dentro de un lienzo común, rellenando
+	# con AtlasTexture.margin, para que el personaje no salte al cambiar de clip.
+	var data := {}  # data[state][dir] = {"tex": [], "img": [], "foot": int}
+	var above := 0  # px del lienzo común por encima de los pies
+	var below := 0  # px por debajo de los pies
+	var canvas_w := 0
+	for state in clips:
+		data[state] = {}
+		for dir in clips[state]:
+			var entry := {"tex": [], "img": [], "foot": 0}
+			for p in clips[state][dir]["frames"]:
+				var tex := load(p) as Texture2D
+				var img := Image.load_from_file(ProjectSettings.globalize_path(p))
+				if tex == null or img == null:
+					push_error("No se pudo cargar %s (¿corriste --import?)" % p)
+					return 1
+				_check_import(p)
+				entry["tex"].append(tex)
+				entry["img"].append(img)
+				var used := img.get_used_rect()
+				if used.size != Vector2i.ZERO:
+					entry["foot"] = maxi(entry["foot"], used.end.y)
+			for img: Image in entry["img"]:
+				above = maxi(above, entry["foot"])
+				below = maxi(below, img.get_height() - entry["foot"])
+				canvas_w = maxi(canvas_w, img.get_width())
+			data[state][dir] = entry
+	var canvas_h := above + below
+
 	var frames := SpriteFrames.new()
 	frames.remove_animation(&"default")
 	var hit_frames := {}
 	var fps_cfg: Dictionary = _config.get("fps", {})
 	var loop_cfg: Dictionary = _config.get("loop", {})
-	var hit_cfg: Dictionary = _config.get("hit_frame", {})
-	var bottom_max := 0
-	var top_min := 1 << 30
-	var frame_h := 0
+	var body_h_idle := 0
+	var body_h_all := 0
+	var padded := 0
 
-	for state in clips:
-		for dir in clips[state]:
+	for state in data:
+		for dir in data[state]:
 			var anim := StringName("%s_%s" % [state, dir])
 			frames.add_animation(anim)
 			frames.set_animation_speed(anim, float(fps_cfg.get(state, DEFAULT_FPS.get(state, 8.0))))
 			frames.set_animation_loop(anim, bool(loop_cfg.get(state, DEFAULT_LOOP.get(state, true))))
-			var paths: Array = clips[state][dir]["frames"]
-			for p in paths:
-				var tex := load(p) as Texture2D
-				if tex == null:
-					push_error("No se pudo cargar %s (¿corriste --import?)" % p)
-					return 1
+			var entry: Dictionary = data[state][dir]
+			var foot: int = entry["foot"]
+			for i in entry["tex"].size():
+				var tex: Texture2D = entry["tex"][i]
+				var img: Image = entry["img"][i]
+				var size := Vector2(img.get_width(), img.get_height())
+				var pad := Vector2(floorf((canvas_w - size.x) / 2.0), above - foot)
+				if pad != Vector2.ZERO or size != Vector2(canvas_w, canvas_h):
+					var atlas := AtlasTexture.new()
+					atlas.atlas = tex
+					atlas.region = Rect2(Vector2.ZERO, size)
+					atlas.margin = Rect2(pad, Vector2(canvas_w, canvas_h) - size)
+					tex = atlas
+					padded += 1
 				frames.add_frame(anim, tex)
-				var img := Image.load_from_file(ProjectSettings.globalize_path(p))
-				if img:
-					var used := img.get_used_rect()
-					if used.size != Vector2i.ZERO:
-						bottom_max = maxi(bottom_max, used.end.y)
-						top_min = mini(top_min, used.position.y)
-					frame_h = maxi(frame_h, img.get_height())
-			if state == "attack" and not hit_frames.has(state):
-				var count := paths.size()
-				hit_frames[state] = clampi(int(hit_cfg.get(state, count / 2)), 0, count - 1)
+				var used := img.get_used_rect()
+				if used.size != Vector2i.ZERO:
+					var h := foot - used.position.y
+					body_h_all = maxi(body_h_all, h)
+					if state == "idle":
+						body_h_idle = maxi(body_h_idle, h)
+		if data[state].size() > 0 and _hit_cfg_for(state) != null:
+			hit_frames[state] = _compute_hit_frames(state, data[state])
 
 	frames.set_meta(&"hit_frames", hit_frames)
-	frames.set_meta(&"frame_height_px", frame_h)
-	# Desplazamiento (px, hacia arriba) para que el borde inferior de los pies
-	# quede en el origen del nodo con `centered = true`.
-	frames.set_meta(&"foot_offset_px", bottom_max - frame_h / 2.0)
-	frames.set_meta(&"body_height_px", bottom_max - top_min)
+	frames.set_meta(&"frame_height_px", canvas_h)
+	# Desplazamiento (px, hacia arriba) para que la línea de pies quede en el
+	# origen del nodo con `centered = true`.
+	frames.set_meta(&"foot_offset_px", above - canvas_h / 2.0)
+	# Altura de referencia: la pose idle si existe (los ataques levantan brazos).
+	frames.set_meta(&"body_height_px", body_h_idle if body_h_idle > 0 else body_h_all)
 
 	var err := ResourceSaver.save(frames, out_path)
 	if err != OK:
@@ -122,13 +163,78 @@ func build(out_path: String) -> int:
 		return 1
 
 	print("SpriteFrames guardado en ", out_path)
-	for state in clips:
-		var dirs: Array = clips[state].keys()
-		var counts := dirs.map(func(d): return "%s(%d)" % [d, clips[state][d]["frames"].size()])
+	for state in data:
+		var dirs: Array = data[state].keys()
+		var counts := dirs.map(func(d): return "%s(%d)" % [d, data[state][d]["tex"].size()])
 		print("  %s: %s" % [state, ", ".join(counts)])
-	print("  foot_offset_px=%s body_height_px=%d frame_height_px=%d hit_frames=%s" % [
-		frames.get_meta(&"foot_offset_px"), bottom_max - top_min, frame_h, hit_frames])
+	print("  lienzo=%dx%d foot_offset_px=%s body_height_px=%d frames_rellenados=%d" % [
+		canvas_w, canvas_h, frames.get_meta(&"foot_offset_px"), frames.get_meta(&"body_height_px"), padded])
+	print("  hit_frames=%s" % [hit_frames])
 	return 0
+
+
+# --- Frame de impacto -------------------------------------------------------
+
+## Config de hit_frame para un estado: int, "auto", {dir|"default": int|"auto"}
+## o null si el estado no tiene golpe (solo "attack" lo tiene por defecto).
+func _hit_cfg_for(state: String) -> Variant:
+	var cfg: Dictionary = _config.get("hit_frame", {})
+	if cfg.has(state):
+		return cfg[state]
+	return "auto" if state == "attack" else null
+
+
+## Frame de impacto por dirección: {dir: frame}.
+## "auto": el frame donde la silueta llega más lejos hacia donde mira el
+## personaje (solo medible con componente horizontal). Para up/down (el golpe
+## va hacia/desde la cámara) se usa el promedio de las demás direcciones.
+func _compute_hit_frames(state: String, clips_by_dir: Dictionary) -> Dictionary:
+	var cfg: Variant = _hit_cfg_for(state)
+	var per_dir: Dictionary = cfg if cfg is Dictionary else {"default": cfg}
+	var result := {}
+	var auto_dirs: Array = []
+	for dir in clips_by_dir:
+		var c: Variant = per_dir.get(dir, per_dir.get("default", "auto"))
+		var count: int = clips_by_dir[dir]["img"].size()
+		if c is String and c == "auto":
+			auto_dirs.append(dir)
+		else:
+			result[dir] = clampi(int(c), 0, count - 1)
+	var measured: Array = []
+	for dir in auto_dirs:
+		var sx := 1 if String(dir).contains("right") else (-1 if String(dir).contains("left") else 0)
+		if sx == 0:
+			continue
+		var best := 0
+		var best_reach := -INF
+		var imgs: Array = clips_by_dir[dir]["img"]
+		for i in imgs.size():
+			var img: Image = imgs[i]
+			var used := img.get_used_rect()
+			var cx := img.get_width() / 2.0
+			var reach := (used.end.x - cx) if sx > 0 else (cx - used.position.x)
+			if reach > best_reach:
+				best_reach = reach
+				best = i
+		result[dir] = best
+		measured.append(best)
+	var fallback := -1
+	if measured.size() > 0:
+		fallback = roundi(measured.reduce(func(a, b): return a + b, 0) / float(measured.size()))
+	for dir in auto_dirs:
+		if not result.has(dir):
+			var count: int = clips_by_dir[dir]["img"].size()
+			result[dir] = clampi(fallback if fallback >= 0 else count / 2, 0, count - 1)
+	return result
+
+
+## Avisa si el PNG no está importado como pixel art (lossless, sin mipmaps).
+func _check_import(png_path: String) -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(png_path + ".import") != OK:
+		return
+	if int(cfg.get_value("params", "compress/mode", 0)) != 0 or bool(cfg.get_value("params", "mipmaps/generate", false)):
+		push_warning("%s no está importado como pixel art (compress/mode=0, mipmaps off). Revisa [importer_defaults] o el .import." % png_path)
 
 
 # --- Fuentes ---------------------------------------------------------------

@@ -63,7 +63,7 @@ assets/textures/         Texturas de terreno/props
 - Velocidad `walk_speed`/`run_speed`, `acceleration`/`deceleration` exportados.
 - `facing` (Vector2, espacio input) y `facing_3d` (Vector3) guardan la última dirección mirada; `get_facing_name()` devuelve una de 8: `right, down_right, down, down_left, left, up_left, up, up_right`.
 - `get_anim_state()` → `idle | walk | run | attack`.
-- `attack()`: bloquea movimiento y giro, reproduce `attack_<dir>` una vez y vuelve a idle/walk al terminar (`animation_finished`). El golpe (`take_hit` a lo que esté en `AttackHitbox`) se aplica al llegar al frame `hit_frames.attack` del SpriteFrames. Sin animación de ataque usa `fallback_attack_duration`/`fallback_attack_hit_time`.
+- `attack()`: bloquea movimiento y giro, reproduce `attack_<dir>` una vez y vuelve a idle/walk al terminar (`animation_finished`). El golpe (`take_hit` a lo que esté en `AttackHitbox`) se aplica al llegar al frame de impacto **de esa dirección** (`hit_frames.attack.<dir>` del SpriteFrames; PixelLab no sincroniza el golpe entre direcciones). Sin animación de ataque usa `fallback_attack_duration`/`fallback_attack_hit_time`.
 - **Sprites**: nodo `Sprite` (AnimatedSprite3D) con billboard Y, filtro nearest, alpha cut Discard (proyecta sombra), `shaded`. `setup_sprite()` lee la metadata del SpriteFrames: `pixel_size = character_height / body_height_px` (héroe 1.65 m; puertas 1.7 m) y `offset.y = foot_offset_px` (pies en el origen = suelo). Sin SpriteFrames se muestra la cápsula placeholder.
 - **Fallback de animaciones** (`_resolve_animation`, cacheado): misma dirección → vecinas de más cercana a más lejana (en diagonales primero la horizontal: `down_right → right → down`) → espejo `left↔right` con `flip_h` → estados alternativos (`run → walk → idle`, `attack → idle`, `idle →` frame 0 de walk en pausa). Funciona con 4 u 8 direcciones y con estados incompletos; al agregar animaciones no hay que tocar código.
 - Velocidad de animación: FPS por estado en el SpriteFrames + multiplicadores `idle/walk/run_anim_speed`. Si `run` cae a `walk`, se acelera ×(run_speed/walk_speed).
@@ -80,9 +80,11 @@ assets/textures/         Texturas de terreno/props
 
 - Lee `states[].frames.rotations` (1 frame por dirección, prioridad baja) y `states[].frames.animations` (`{nombre: {direccion: [pngs]}}`). Sin metadata escanea `<anim>/<direccion>/*.png` y `<estado>/rotations/<direccion>.png`.
 - Nombres de PixelLab → estado por palabra clave: idle/breath/stand → `idle`, walk → `walk`, run/sprint → `run`, attack/slash/swing/strike/punch/kick → `attack`. Direcciones `south/north-east/...` → `down/up_right/...`.
-- `sprite_import.json` (opcional, en la carpeta del export): `aliases` (nombre exacto → estado), `fps`, `loop`, `hit_frame` (frame del golpe; por defecto la mitad).
-- Guarda metadata en el SpriteFrames: `hit_frames`, `foot_offset_px`, `body_height_px`, `frame_height_px` (calculados con el bounding box opaco de los PNG).
-- Importar PNGs con el preset 2D por defecto (lossless, sin mipmaps); el filtro nearest lo pone el nodo.
+- `sprite_import.json` (opcional, en la carpeta del export): `aliases` (nombre exacto → estado; el héroe usa `"Cross_Punch": "attack"`), `fps`, `loop`, `hit_frame`.
+- `hit_frame`: `"auto"` (default para attack) detecta por dirección el frame donde la silueta llega más lejos hacia donde mira; para `up`/`down` (golpe hacia/desde cámara, no medible en 2D) usa el promedio de las demás. Se puede forzar: `{"attack": 3}` o `{"attack": {"default": "auto", "up_left": 3}}`.
+- **Lienzos mixtos**: PixelLab exporta algunos clips en otro tamaño (las `south` del héroe vienen en 68×68, el resto 48×48) y con los pies a distinta altura. El builder alinea cada clip por su línea de pies en un lienzo común con `AtlasTexture.margin` (héroe: 68×70, pies en fila 58).
+- Guarda metadata en el SpriteFrames: `hit_frames` (`{estado: {dir: frame}}`), `foot_offset_px`, `body_height_px` (de la pose idle), `frame_height_px` (calculados con el bounding box opaco de los PNG).
+- Import de PNG: `[importer_defaults]` en `project.godot` fuerza lossless, sin mipmaps y **`detect_3d` desactivado** (si no, Godot recomprime a VRAM S3TC + mipmaps al ver la textura en 3D y el pixel art se ensucia). El builder avisa si algún `.import` no cumple. El filtro nearest lo pone el nodo.
 
 ## Look HD-2D — dónde ajustar
 

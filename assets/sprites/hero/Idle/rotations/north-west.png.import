@@ -2,7 +2,7 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://fygf5bevvf1p"
+uid="uid://dchieaq5quotb"
 path="res://.godot/imported/north-west.png-22dd516d21f49e883112dfc783af27cb.ctex"
 metadata={
 "vram_texture": false
@@ -37,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

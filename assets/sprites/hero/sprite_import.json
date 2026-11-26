@@ -1,6 +1,6 @@
 {
-  "aliases": {},
+  "aliases": { "Cross_Punch": "attack" },
   "fps": { "idle": 4, "walk": 8, "run": 12, "attack": 12 },
   "loop": { "attack": false },
-  "hit_frame": {}
+  "hit_frame": { "attack": "auto" }
 }

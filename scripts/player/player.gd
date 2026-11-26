@@ -152,13 +152,23 @@ func attack() -> void:
 	var resolved := _resolve_animation(&"attack", get_facing_name())
 	_attack_uses_anim = resolved[0] != &"" and String(resolved[0]).begins_with("attack_")
 	if _attack_uses_anim:
-		var hit_frames: Dictionary = sprite.sprite_frames.get_meta(&"hit_frames", {})
-		var count := sprite.sprite_frames.get_frame_count(resolved[0])
-		_hit_frame = clampi(int(hit_frames.get("attack", count / 2)), 0, count - 1)
+		_hit_frame = _get_hit_frame(resolved[0])
 		sprite.flip_h = resolved[1]
 		sprite.speed_scale = 1.0
 		sprite.play(resolved[0])
 		sprite.frame = 0
+
+
+## Frame de impacto de una animación de ataque, según la metadata
+## `hit_frames` del SpriteFrames: {"attack": {"<dir>": frame}} (por dirección,
+## porque PixelLab no sincroniza el golpe entre direcciones) o {"attack": frame}.
+## Se usa la dirección de la animación que realmente suena (tras el fallback).
+func _get_hit_frame(anim: StringName) -> int:
+	var count := sprite.sprite_frames.get_frame_count(anim)
+	var cfg: Variant = (sprite.sprite_frames.get_meta(&"hit_frames", {}) as Dictionary).get("attack", count / 2)
+	if cfg is Dictionary:
+		cfg = cfg.get(String(anim).trim_prefix("attack_"), count / 2)
+	return clampi(int(cfg), 0, count - 1)
 
 
 func _process_attack(delta: float) -> void:

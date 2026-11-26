@@ -9,6 +9,11 @@
 [ext_resource type="Script" path="res://scripts/levels/hd2d_lighting.gd" id="8_light"]
 [ext_resource type="PackedScene" path="res://scenes/props/casa_comun.tscn" id="9_casa"]
 [ext_resource type="PackedScene" path="res://scenes/props/casa_carreta.tscn" id="10_carreta"]
+[ext_resource type="PackedScene" path="res://scenes/props/arbusto.tscn" id="11_arbusto"]
+[ext_resource type="PackedScene" path="res://scenes/props/muneco_entrenamiento.tscn" id="12_muneco"]
+[ext_resource type="PackedScene" path="res://scenes/props/vasija.tscn" id="13_vasija"]
+[ext_resource type="PackedScene" path="res://scenes/props/caja.tscn" id="14_caja"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="15_hud"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_grass"]
 albedo_color = Color(0.42, 0.55, 0.3, 1)
@@ -140,9 +145,52 @@ transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2.5, 0, 3)
 [node name="Lamp3" parent="Lamps" instance=ExtResource("6_lamp")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -5, 0, 2.5)
 
+[node name="Breakables" type="Node3D" parent="."]
+
+[node name="Arbusto1" parent="Breakables" instance=ExtResource("11_arbusto")]
+transform = Transform3D(0.9848, 0, -0.1736, 0, 1, 0, 0.1736, 0, 0.9848, -19.5, 0, -9)
+
+[node name="Arbusto2" parent="Breakables" instance=ExtResource("11_arbusto")]
+transform = Transform3D(0.342, 0, -0.9397, 0, 1, 0, 0.9397, 0, 0.342, -21.1, 0, -7.8)
+
+[node name="Arbusto3" parent="Breakables" instance=ExtResource("11_arbusto")]
+transform = Transform3D(-0.866, 0, -0.5, 0, 1, 0, 0.5, 0, -0.866, -19.8, 0, -10.4)
+
+[node name="Arbusto4" parent="Breakables" instance=ExtResource("11_arbusto")]
+transform = Transform3D(-0.9397, 0, 0.342, 0, 1, 0, -0.342, 0, -0.9397, 19.5, 0, -10)
+
+[node name="Arbusto5" parent="Breakables" instance=ExtResource("11_arbusto")]
+transform = Transform3D(0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866, 21.2, 0, -10.6)
+
+[node name="Arbusto6" parent="Breakables" instance=ExtResource("11_arbusto")]
+transform = Transform3D(-0.342, 0, -0.9397, 0, 1, 0, 0.9397, 0, -0.342, 19.3, 0, -11.6)
+
+[node name="Arbusto7" parent="Breakables" instance=ExtResource("11_arbusto")]
+transform = Transform3D(-0.1736, 0, 0.9848, 0, 1, 0, -0.9848, 0, -0.1736, -9.5, 0, 19.5)
+
+[node name="Arbusto8" parent="Breakables" instance=ExtResource("11_arbusto")]
+transform = Transform3D(0.766, 0, 0.6428, 0, 1, 0, -0.6428, 0, 0.766, -10.8, 0, 20.4)
+
+[node name="Vasija1" parent="Breakables" instance=ExtResource("13_vasija")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, -5.5, 0, -3.3)
+
+[node name="Caja1" parent="Breakables" instance=ExtResource("14_caja")]
+transform = Transform3D(0.9781, 0, -0.2079, 0, 1, 0, 0.2079, 0, 0.9781, 11.5, 0, -4.3)
+
+[node name="Vasija2" parent="Breakables" instance=ExtResource("13_vasija")]
+transform = Transform3D(1.0, 0, -0.0, 0, 1, 0, 0.0, 0, 1.0, 12.8, 0, 6.5)
+
+[node name="Caja2" parent="Breakables" instance=ExtResource("14_caja")]
+transform = Transform3D(0.9903, 0, 0.1392, 0, 1, 0, -0.1392, 0, 0.9903, -3.4, 0, 15.3)
+
+[node name="MunecoEntrenamiento" parent="Breakables" instance=ExtResource("12_muneco")]
+transform = Transform3D(0.9397, 0, 0.342, 0, 1, 0, -0.342, 0, 0.9397, 4.5, 0, -2.8)
+
 [node name="Player" parent="." instance=ExtResource("2_player")]
 
 [node name="OctopathCamera" parent="." node_paths=PackedStringArray("target") instance=ExtResource("3_cam")]
 target = NodePath("../Player")
 
 [node name="Vignette" parent="." instance=ExtResource("7_vig")]
+
+[node name="HUD" parent="." instance=ExtResource("15_hud")]

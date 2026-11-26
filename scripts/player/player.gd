@@ -38,8 +38,30 @@ const STATE_FALLBACKS := {
 
 @export_group("Ataque")
 @export var attack_cooldown: float = 0.15
-## Distancia del hitbox respecto al centro del jugador.
-@export var attack_reach: float = 0.9
+## Hitbox del ataque: esfera centrada a `attack_reach` m del centro del jugador
+## (en la dirección mirada), a `attack_height` m del suelo, de radio
+## `attack_radius`. Alcance total = reach + radius. Puño actual: el puño
+## llega a 0.72-0.86 m (medido en los frames de impacto) -> 0.55 + 0.35 = 0.9 m.
+## Para una espada: subir reach/radius (p.ej. 0.8 + 0.6).
+@export var attack_reach: float = 0.55:
+	set(value):
+		attack_reach = value
+		if is_node_ready():
+			_update_hitbox_position()
+@export var attack_radius: float = 0.35:
+	set(value):
+		attack_radius = value
+		if is_node_ready():
+			_update_hitbox_position()
+@export var attack_height: float = 0.9:
+	set(value):
+		attack_height = value
+		if is_node_ready():
+			_update_hitbox_position()
+@export var attack_damage: int = 1
+@export var attack_knockback: float = 0.3
+## Mostrar la esfera del hitbox un instante al golpear (debug).
+@export var show_hit_flash: bool = false
 ## Solo si NO hay animación de ataque: duración total y momento del golpe.
 @export var fallback_attack_duration: float = 0.35
 @export var fallback_attack_hit_time: float = 0.12
@@ -73,7 +95,7 @@ var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var sprite: AnimatedSprite3D = $Sprite
 @onready var placeholder: Node3D = $Placeholder
-@onready var attack_hitbox: Area3D = $AttackHitbox
+@onready var attack_hitbox: Hitbox = $AttackHitbox
 @onready var attack_flash: MeshInstance3D = $AttackHitbox/Flash
 
 
@@ -147,6 +169,10 @@ func attack() -> void:
 	is_attacking = true
 	_attack_elapsed = 0.0
 	_attack_hit_done = false
+	attack_hitbox.begin_attack()  # nuevo attack_id: cada objetivo recibe 1 golpe por ataque
+	attack_hitbox.damage = attack_damage
+	attack_hitbox.knockback = attack_knockback
+	GameFeel.sfx(&"swing")
 	attacked.emit(facing_3d)
 
 	var resolved := _resolve_animation(&"attack", get_facing_name())
@@ -189,12 +215,13 @@ func _process_attack(delta: float) -> void:
 
 func _do_hit() -> void:
 	_attack_hit_done = true
-	for body in attack_hitbox.get_overlapping_bodies():
-		if body != self and body.has_method(&"take_hit"):
-			body.take_hit(facing_3d)
-	attack_flash.visible = true
-	get_tree().create_timer(hit_flash_time, false, true).timeout.connect(
-		func(): attack_flash.visible = false)
+	# Golpea a los Hurtbox solapados (Area-Area). Hitstop/sacudida/sonido los
+	# dispara el Hitbox vía GameFeel si acierta.
+	attack_hitbox.strike(facing_3d, self)
+	if show_hit_flash:
+		attack_flash.visible = true
+		get_tree().create_timer(hit_flash_time, false, true).timeout.connect(
+			func(): attack_flash.visible = false)
 
 
 func _end_attack() -> void:
@@ -281,7 +308,10 @@ func _mirror(dir: StringName) -> StringName:
 
 
 func _update_hitbox_position() -> void:
-	attack_hitbox.position = Vector3(0.0, 0.9, 0.0) + facing_3d * attack_reach
+	attack_hitbox.position = Vector3(0.0, attack_height, 0.0) + facing_3d * attack_reach
+	attack_hitbox.radius = attack_radius
+	# El destello de debug es una esfera de radio 0.45: escalarla al radio real.
+	attack_flash.scale = Vector3.ONE * (attack_radius / 0.45)
 
 
 func _update_visuals() -> void:

@@ -21,6 +21,11 @@ Blender: `C:\Program Files\Blender Foundation\Blender 5.3\blender.exe` (usar en 
 
 Siempre correr la verificación headless después de cambiar scripts o escenas.
 
+Tests (input simulado, headless): `tests/test_combat.gd` → debe imprimir `RESULTADO: OK (0 fallos)`.
+```bash
+"/c/Users/daniel/Downloads/GODOT/Godot_v4.7.2-stable_win64_console.exe" --headless --path . -s res://tests/test_combat.gd
+```
+
 ## Estructura
 
 ```
@@ -30,10 +35,13 @@ scenes/
   player/                player.tscn (CharacterBody3D)
   camera/                octopath_camera.tscn (Camera3D + CameraAttributesPractical)
   props/                 Props reutilizables: casa_comun, casa_carreta, arbol_otono (modelos 3D) + placeholders (casa, árbol, farol; ya no usados en pueblo_test salvo el farol)
-  ui/                    Overlays (vignette.tscn)
+  ui/                    Overlays (vignette.tscn, hud.tscn)
 scripts/                 GDScript, espejando la estructura de scenes/ (player/, camera/, ...)
+  combat/                Componentes de daño: hitbox, hurtbox, health, hit_info
+  autoload/              GameFeel (hitstop, sacudida, sfx), PlayerStats (monedas, corazones)
 shaders/                 .gdshader (vignette, prop_hd2d, foliage_hd2d) + includes/hd2d_prop_common.gdshaderinc
 resources/               Recursos compartidos (.tres): hd2d_environment.tres, hero_frames.tres (generado)
+tests/                   Tests con input simulado (correr con -s)
 tools/                   Scripts de línea de comandos (build_sprite_frames.gd, optimize_model.py para Blender)
 assets/sprites/<pj>/     Exports de PixelLab tal cual (metadata.json + PNGs) + sprite_import.json
 assets/models/<grupo>/   Modelos optimizados (.glb + _albedo.png + .report.json), generados por optimize_model.py
@@ -49,8 +57,9 @@ assets/textures/         Texturas de terreno/props
 - Escala del mundo: **1 unidad = 1 metro**. Personaje ≈ 1.6 m.
 - Movimiento en el plano XZ: input "arriba" = −Z (alejándose de la cámara), "abajo" = +Z.
 - Las props van como escenas propias en `scenes/props/` e instanciadas en los niveles.
-- Capas de física: 1 `world`, 2 `player`, 3 `enemies`, 4 `camera_occluder` (solo para los rayos del fader de cámara; nada choca con ella). El hitbox de ataque del jugador detecta la capa 3 y llama `take_hit(direction)` en los cuerpos que lo implementen.
-- Física 3D = **Jolt** (default en Godot 4.6+): las `Area3D` **no detectan `StaticBody3D`** por defecto. Enemigos/objetos golpeables deben ser `CharacterBody3D`/`RigidBody3D`/`AnimatableBody3D`.
+- Capas de física: 1 `world`, 2 `player`, 3 `enemies`, 4 `camera_occluder` (solo para los rayos del fader de cámara; nada choca con ella), 5 `hurtbox` (zonas que reciben golpes; el `Hitbox` del ataque la monitorea).
+- Física 3D = **Jolt** (default en Godot 4.6+): las `Area3D` **no detectan `StaticBody3D`** por defecto. Por eso el daño es **Area-Area** (`Hitbox` ↔ `Hurtbox`), que sí funciona sobre cualquier tipo de cuerpo.
+- Autoloads `GameFeel` y `PlayerStats`: los scripts del juego los usan como globales, pero un script de test cargado con `-s` se compila antes de registrarlos: en tests, acceder vía `root.get_node("GameFeel")` y no tipar variables con clases que los usen (`HittableProp`, `Pickup`).
 
 ## Input Map
 
@@ -65,10 +74,22 @@ assets/textures/         Texturas de terreno/props
 - Velocidad `walk_speed`/`run_speed`, `acceleration`/`deceleration` exportados.
 - `facing` (Vector2, espacio input) y `facing_3d` (Vector3) guardan la última dirección mirada; `get_facing_name()` devuelve una de 8: `right, down_right, down, down_left, left, up_left, up, up_right`.
 - `get_anim_state()` → `idle | walk | run | attack`.
-- `attack()`: bloquea movimiento y giro, reproduce `attack_<dir>` una vez y vuelve a idle/walk al terminar (`animation_finished`). El golpe (`take_hit` a lo que esté en `AttackHitbox`) se aplica al llegar al frame de impacto **de esa dirección** (`hit_frames.attack.<dir>` del SpriteFrames; PixelLab no sincroniza el golpe entre direcciones). Sin animación de ataque usa `fallback_attack_duration`/`fallback_attack_hit_time`.
+- `attack()`: bloquea movimiento y giro, reproduce `attack_<dir>` una vez y vuelve a idle/walk al terminar (`animation_finished`). Al empezar llama `AttackHitbox.begin_attack()` (nuevo `attack_id`); al llegar al frame de impacto **de esa dirección** llama `AttackHitbox.strike()`, que golpea a cada `Hurtbox` solapado (`hit_frames.attack.<dir>` del SpriteFrames; PixelLab no sincroniza el golpe entre direcciones). Sin animación de ataque usa `fallback_attack_duration`/`fallback_attack_hit_time`.
+- Hitbox del ataque: esfera a `attack_reach` (0.55) del centro, a `attack_height` (0.9), radio `attack_radius` (0.35) → alcance 0.9 m, medido sobre el puño (0.72–0.86 m en los frames de impacto). Espada: subir reach/radius. `attack_damage`, `attack_knockback`; `show_hit_flash` muestra la esfera (debug).
 - **Sprites**: nodo `Sprite` (AnimatedSprite3D) con billboard Y, filtro nearest, alpha cut Discard (proyecta sombra), `shaded`. `setup_sprite()` lee la metadata del SpriteFrames: `pixel_size = character_height / body_height_px` (héroe 1.65 m; puertas 1.7 m) y `offset.y = foot_offset_px` (pies en el origen = suelo). Sin SpriteFrames se muestra la cápsula placeholder.
 - **Fallback de animaciones** (`_resolve_animation`, cacheado): misma dirección → vecinas de más cercana a más lejana (en diagonales primero la horizontal: `down_right → right → down`) → espejo `left↔right` con `flip_h` → estados alternativos (`run → walk → idle`, `attack → idle`, `idle →` frame 0 de walk en pausa). Funciona con 4 u 8 direcciones y con estados incompletos; al agregar animaciones no hay que tocar código.
 - Velocidad de animación: FPS por estado en el SpriteFrames + multiplicadores `idle/walk/run_anim_speed`. Si `run` cae a `walk`, se acelera ×(run_speed/walk_speed).
+
+## Combate (golpes, objetos reactivos, game feel)
+
+- **Hacer golpeable cualquier cosa**: agregarle un `Health` (`scripts/combat/health.gd`: `max_hp`, `immortal`, señales `damaged`/`died`/`revived`) y un `Hurtbox` (`Area3D` con `hurtbox.gd`, capa 5, `monitorable`, con su forma; busca el `Health` hermano). Conectar a las señales para reaccionar.
+- `Hitbox` (`hitbox.gd`, del atacante): monitorea la capa 5; `begin_attack()` por ataque y `strike(dir, source)` en el frame del golpe. Cada `Hurtbox` ignora un `attack_id` repetido → **un impacto por ataque**. Si acierta llama `GameFeel.impact()`.
+- `HittableProp` (`scripts/props/hittable_prop.gd`): objeto reactivo configurable por exports (parpadeo blanco, retroceso/inclinación del nodo `Visual` en la dirección del golpe, número de daño, contador de golpes, rotura con `BreakParticles`, reaparición, botín con probabilidad y pesos). Estructura: `StaticBody3D` + `CollisionShape3D` + `Visual` (placeholder + `Sprite` Sprite3D oculto listo para PixelLab: asignar textura, hacerlo visible y ocultar las mallas) + `Hurtbox` + `Health` (+ `BreakParticles`).
+  - `arbusto.tscn` (1 golpe, hojas, reaparece a los 10 s, no reaparece encima del jugador), `muneco_entrenamiento.tscn` (inmortal, números y contador "Golpes: N", se inclina), `vasija.tscn` / `caja.tscn` (2 golpes, pedazos, 60% de soltar moneda 75% / corazón 25%).
+- `Pickup` (`pickup.gd`, `pickup_moneda.tscn`, `pickup_corazon.tscn`): sale despedido (`pop_from`), gira y se recoge al tocarlo tras `pickup_delay`; suma en `PlayerStats` (monedas / curar corazón).
+- `GameFeel` (autoload): `hitstop_seconds` 0.07 (`Engine.time_scale = 0` y restaura con un timer que ignora la escala; usa un token, **no** el reloj del sistema: comparar con el reloj dejaba el juego congelado), `shake_strength`/`shake_duration` (cámara: `h_offset`/`v_offset` en tiempo real), `sfx(nombre)` con sonidos placeholder generados por código (`hit`, `break`, `bush`, `coin`, `heart`, `swing`): para sonidos reales, reemplazar entradas de `GameFeel.sounds` por `AudioStream`. `mute` para tests.
+- HUD (`scenes/ui/hud.tscn`): corazones y monedas desde `PlayerStats`.
+- En `pueblo_test` → nodo `Breakables`: 8 arbustos en 3 grupos en los bordes, muñeco en la plaza (4.5, −2.8), 2 vasijas y 2 cajas junto a las casas (fuera de caminos, puertas y faroles).
 
 ## Pipeline de sprites (PixelLab → SpriteFrames)
 

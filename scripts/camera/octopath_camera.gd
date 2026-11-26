@@ -69,6 +69,34 @@ extends Camera3D
 		_refresh()
 
 var _focus_point: Vector3
+var _shake_strength: float = 0.0
+var _shake_start_usec: int = 0
+var _shake_duration_usec: int = 0
+
+
+## Sacudida leve (la llama GameFeel). Usa h_offset/v_offset, así no interfiere
+## con el seguimiento, y tiempo real para seguir durante el hitstop.
+func shake(strength: float, duration: float) -> void:
+	if strength < _current_shake_strength():
+		return
+	_shake_strength = strength
+	_shake_start_usec = Time.get_ticks_usec()
+	_shake_duration_usec = int(duration * 1_000_000.0)
+
+
+func _current_shake_strength() -> float:
+	if _shake_duration_usec <= 0:
+		return 0.0
+	var t := float(Time.get_ticks_usec() - _shake_start_usec) / _shake_duration_usec
+	return 0.0 if t >= 1.0 else _shake_strength * (1.0 - t) * (1.0 - t)
+
+
+func _process(_delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
+	var s := _current_shake_strength()
+	h_offset = randf_range(-s, s)
+	v_offset = randf_range(-s, s) * 0.7
 
 
 func _ready() -> void:

@@ -1,0 +1,109 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/props/hittable_prop.gd" id="1_prop"]
+[ext_resource type="Script" path="res://scripts/combat/health.gd" id="2_health"]
+[ext_resource type="Script" path="res://scripts/combat/hurtbox.gd" id="3_hurt"]
+[ext_resource type="PackedScene" path="res://scenes/props/pickup_moneda.tscn" id="4_coin"]
+[ext_resource type="PackedScene" path="res://scenes/props/pickup_corazon.tscn" id="5_heart"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_clay"]
+albedo_color = Color(0.74, 0.42, 0.22, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_clay_dark"]
+albedo_color = Color(0.5, 0.26, 0.14, 1)
+roughness = 0.9
+
+[sub_resource type="SphereMesh" id="Pot"]
+material = SubResource("Mat_clay")
+radius = 0.3
+height = 0.6
+
+[sub_resource type="CylinderMesh" id="Neck"]
+material = SubResource("Mat_clay")
+top_radius = 0.15
+bottom_radius = 0.12
+height = 0.2
+
+[sub_resource type="CylinderMesh" id="Rim"]
+material = SubResource("Mat_clay_dark")
+top_radius = 0.17
+bottom_radius = 0.17
+height = 0.05
+
+[sub_resource type="CylinderShape3D" id="Coll"]
+height = 0.8
+radius = 0.32
+
+[sub_resource type="SphereShape3D" id="Hurt"]
+radius = 0.45
+
+[sub_resource type="BoxMesh" id="Shard"]
+material = SubResource("Mat_clay")
+size = Vector3(0.18, 0.04, 0.14)
+
+
+[node name="Vasija" type="StaticBody3D"]
+collision_mask = 0
+script = ExtResource("1_prop")
+knockback_distance = 0.1
+drop_chance = 0.6
+drop_scenes = Array[PackedScene]([ExtResource("4_coin"), ExtResource("5_heart")])
+drop_weights = PackedFloat32Array(0.75, 0.25)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("Coll")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Mesh0" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1.1, 0, 0, 0, 1, 0, 0.32, 0)
+mesh = SubResource("Pot")
+
+[node name="Mesh1" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.68, 0)
+mesh = SubResource("Neck")
+
+[node name="Mesh2" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.79, 0)
+mesh = SubResource("Rim")
+
+[node name="Sprite" type="Sprite3D" parent="Visual"]
+visible = false
+pixel_size = 0.0359
+billboard = 2
+shaded = true
+alpha_cut = 1
+texture_filter = 0
+
+[node name="Hurtbox" type="Area3D" parent="."]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+script = ExtResource("3_hurt")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("Hurt")
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("2_health")
+max_hp = 2
+
+[node name="BreakParticles" type="CPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+emitting = false
+amount = 22
+lifetime = 0.8
+one_shot = true
+explosiveness = 1.0
+mesh = SubResource("Shard")
+direction = Vector3(0, 1, 0)
+spread = 70.0
+initial_velocity_min = 2.0
+initial_velocity_max = 4.2
+angular_velocity_min = -540.0
+angular_velocity_max = 540.0
+scale_amount_min = 0.6
+scale_amount_max = 1.4

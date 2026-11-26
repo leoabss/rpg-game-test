@@ -1,0 +1,113 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/props/hittable_prop.gd" id="1_prop"]
+[ext_resource type="Script" path="res://scripts/combat/health.gd" id="2_health"]
+[ext_resource type="Script" path="res://scripts/combat/hurtbox.gd" id="3_hurt"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_wood"]
+albedo_color = Color(0.45, 0.3, 0.17, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_straw"]
+albedo_color = Color(0.86, 0.72, 0.42, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_cloth"]
+albedo_color = Color(0.6, 0.25, 0.2, 1)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="Post"]
+material = SubResource("Mat_wood")
+top_radius = 0.07
+bottom_radius = 0.08
+height = 1.0
+
+[sub_resource type="CylinderMesh" id="Body"]
+material = SubResource("Mat_straw")
+top_radius = 0.22
+bottom_radius = 0.26
+height = 0.7
+
+[sub_resource type="SphereMesh" id="Head"]
+material = SubResource("Mat_straw")
+radius = 0.19
+height = 0.38
+
+[sub_resource type="BoxMesh" id="Arms"]
+material = SubResource("Mat_wood")
+size = Vector3(0.95, 0.09, 0.09)
+
+[sub_resource type="CylinderMesh" id="Belt"]
+material = SubResource("Mat_cloth")
+top_radius = 0.265
+bottom_radius = 0.265
+height = 0.08
+
+[sub_resource type="CylinderShape3D" id="Coll"]
+height = 1.7
+radius = 0.3
+
+[sub_resource type="CapsuleShape3D" id="Hurt"]
+radius = 0.4
+height = 1.6
+
+
+[node name="MunecoEntrenamiento" type="StaticBody3D"]
+collision_mask = 0
+script = ExtResource("1_prop")
+knockback_distance = 0.12
+knockback_time = 0.35
+tilt_degrees = 14.0
+show_damage_numbers = true
+show_hit_counter = true
+label_height = 1.9
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+shape = SubResource("Coll")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Mesh0" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("Post")
+
+[node name="Mesh1" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+mesh = SubResource("Body")
+
+[node name="Mesh2" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+mesh = SubResource("Belt")
+
+[node name="Mesh3" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.58, 0)
+mesh = SubResource("Head")
+
+[node name="Mesh4" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+mesh = SubResource("Arms")
+
+[node name="Sprite" type="Sprite3D" parent="Visual"]
+visible = false
+pixel_size = 0.0359
+billboard = 2
+shaded = true
+alpha_cut = 1
+texture_filter = 0
+
+[node name="Hurtbox" type="Area3D" parent="."]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+script = ExtResource("3_hurt")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Hurtbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+shape = SubResource("Hurt")
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("2_health")
+max_hp = 9999
+immortal = true
+

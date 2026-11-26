@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
 [ext_resource type="SpriteFrames" path="res://resources/hero_frames.tres" id="2_frames"]
+[ext_resource type="Script" path="res://scripts/combat/hitbox.gd" id="3_hitbox"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.35
@@ -24,7 +25,7 @@ material = SubResource("Mat_nose")
 size = Vector3(0.18, 0.18, 0.3)
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_hit"]
-radius = 0.6
+radius = 0.35
 
 [sub_resource type="StandardMaterial3D" id="Mat_flash"]
 transparency = 1
@@ -67,10 +68,12 @@ sprite_frames = ExtResource("2_frames")
 animation = &"idle_down"
 
 [node name="AttackHitbox" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.9)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.55)
 collision_layer = 0
-collision_mask = 4
+collision_mask = 16
 monitorable = false
+script = ExtResource("3_hitbox")
+radius = 0.35
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="AttackHitbox"]
 shape = SubResource("SphereShape3D_hit")

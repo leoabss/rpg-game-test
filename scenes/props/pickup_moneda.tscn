@@ -1,0 +1,45 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/props/pickup.gd" id="1_pick"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_gold"]
+albedo_color = Color(1, 0.78, 0.2, 1)
+metallic = 0.7
+roughness = 0.3
+emission_enabled = true
+emission = Color(1, 0.7, 0.15, 1)
+emission_energy_multiplier = 0.6
+
+[sub_resource type="CylinderMesh" id="Coin"]
+material = SubResource("Mat_gold")
+top_radius = 0.16
+bottom_radius = 0.16
+height = 0.04
+
+[sub_resource type="SphereShape3D" id="Area"]
+radius = 0.45
+
+[node name="PickupMoneda" type="Area3D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_pick")
+kind = 0
+
+[node name="Visual" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+
+[node name="Mesh0" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0)
+mesh = SubResource("Coin")
+
+[node name="Sprite" type="Sprite3D" parent="Visual"]
+visible = false
+pixel_size = 0.02
+billboard = 2
+shaded = true
+alpha_cut = 1
+texture_filter = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("Area")

@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/props/pickup.gd" id="1_pick"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_heart"]
+albedo_color = Color(0.92, 0.15, 0.2, 1)
+roughness = 0.5
+emission_enabled = true
+emission = Color(0.9, 0.1, 0.15, 1)
+emission_energy_multiplier = 0.5
+
+[sub_resource type="SphereMesh" id="Lobe"]
+material = SubResource("Mat_heart")
+radius = 0.1
+height = 0.2
+
+[sub_resource type="PrismMesh" id="Tip"]
+material = SubResource("Mat_heart")
+size = Vector3(0.36, 0.24, 0.14)
+
+[sub_resource type="SphereShape3D" id="Area"]
+radius = 0.45
+
+[node name="PickupCorazon" type="Area3D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_pick")
+kind = 1
+
+[node name="Visual" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+
+[node name="Mesh0" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.085, 0.06, 0)
+mesh = SubResource("Lobe")
+
+[node name="Mesh1" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.085, 0.06, 0)
+mesh = SubResource("Lobe")
+
+[node name="Mesh2" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(-1, 0, 0, 0, -1, 0, 0, 0, 1, 0, -0.07, 0)
+mesh = SubResource("Tip")
+
+[node name="Sprite" type="Sprite3D" parent="Visual"]
+visible = false
+pixel_size = 0.02
+billboard = 2
+shaded = true
+alpha_cut = 1
+texture_filter = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("Area")

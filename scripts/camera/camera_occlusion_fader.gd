@@ -49,9 +49,12 @@ func _physics_process(delta: float) -> void:
 	for m in hit:
 		if not _faded.has(m):
 			_faded[m] = 0.0
-	for m: GeometryInstance3D in _faded.keys():
+	# Sin tipar la variable: un objeto liberado (roto, recogido...) fallaría al
+	# asignarse a un GeometryInstance3D antes de poder comprobarlo.
+	for m in _faded.keys():
 		if not is_instance_valid(m):
 			_faded.erase(m)
+			_uses_dither.erase(m)
 			continue
 		var goal := fade_amount if hit.has(m) else 0.0
 		var v := move_toward(float(_faded[m]), goal, fade_speed * delta)
@@ -99,7 +102,13 @@ func _meshes_of(root: Node) -> Array:
 	var id := root.get_instance_id()
 	if not _meshes_by_root.has(id):
 		_meshes_by_root[id] = root.find_children("*", "GeometryInstance3D", true, false)
-	return _meshes_by_root[id]
+		if not root.tree_exiting.is_connected(_forget_root):
+			root.tree_exiting.connect(_forget_root.bind(id))
+	return (_meshes_by_root[id] as Array).filter(func(m): return is_instance_valid(m))
+
+
+func _forget_root(id: int) -> void:
+	_meshes_by_root.erase(id)
 
 
 func _apply(m: GeometryInstance3D, v: float) -> void:

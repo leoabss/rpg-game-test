@@ -1,0 +1,81 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/hero/Idle/rotations/south.png" id="1_gl5v7"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hero/Idle/rotations/south-west.png" id="2_p5c58"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hero/Idle/rotations/south-east.png" id="3_oaqc3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hero/Idle/rotations/west.png" id="4_thqy3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hero/Idle/rotations/east.png" id="5_oickh"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hero/Idle/rotations/north.png" id="6_7wvky"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hero/Idle/rotations/north-west.png" id="7_nu8km"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hero/Idle/rotations/north-east.png" id="8_okvwo"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_gl5v7")
+}],
+"loop": 1,
+"name": &"idle_down",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_p5c58")
+}],
+"loop": 1,
+"name": &"idle_down_left",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_oaqc3")
+}],
+"loop": 1,
+"name": &"idle_down_right",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_thqy3")
+}],
+"loop": 1,
+"name": &"idle_left",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_oickh")
+}],
+"loop": 1,
+"name": &"idle_right",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_7wvky")
+}],
+"loop": 1,
+"name": &"idle_up",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_nu8km")
+}],
+"loop": 1,
+"name": &"idle_up_left",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("8_okvwo")
+}],
+"loop": 1,
+"name": &"idle_up_right",
+"speed": 4.0
+}]
+metadata/hit_frames = {}
+metadata/frame_height_px = 48
+metadata/foot_offset_px = 23.0
+metadata/body_height_px = 46

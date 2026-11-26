@@ -1,0 +1,6 @@
+{
+  "aliases": {},
+  "fps": { "idle": 4, "walk": 8, "run": 12, "attack": 12 },
+  "loop": { "attack": false },
+  "hit_frame": {}
+}

@@ -32,8 +32,9 @@ scenes/
   ui/                    Overlays (vignette.tscn)
 scripts/                 GDScript, espejando la estructura de scenes/ (player/, camera/, ...)
 shaders/                 .gdshader (vignette.gdshader)
-resources/               Recursos compartidos (.tres): hd2d_environment.tres
-assets/sprites/          Sprites/spritesheets (PixelLab)
+resources/               Recursos compartidos (.tres): hd2d_environment.tres, hero_frames.tres (generado)
+tools/                   Scripts de línea de comandos (build_sprite_frames.gd)
+assets/sprites/<pj>/     Exports de PixelLab tal cual (metadata.json + PNGs) + sprite_import.json
 assets/models/           Modelos 3D (.glb)
 assets/textures/         Texturas de terreno/props
 ```
@@ -47,6 +48,7 @@ assets/textures/         Texturas de terreno/props
 - Movimiento en el plano XZ: input "arriba" = −Z (alejándose de la cámara), "abajo" = +Z.
 - Las props van como escenas propias en `scenes/props/` e instanciadas en los niveles.
 - Capas de física: 1 `world`, 2 `player`, 3 `enemies`. El hitbox de ataque del jugador detecta la capa 3 y llama `take_hit(direction)` en los cuerpos que lo implementen.
+- Física 3D = **Jolt** (default en Godot 4.6+): las `Area3D` **no detectan `StaticBody3D`** por defecto. Enemigos/objetos golpeables deben ser `CharacterBody3D`/`RigidBody3D`/`AnimatableBody3D`.
 
 ## Input Map
 
@@ -61,7 +63,26 @@ assets/textures/         Texturas de terreno/props
 - Velocidad `walk_speed`/`run_speed`, `acceleration`/`deceleration` exportados.
 - `facing` (Vector2, espacio input) y `facing_3d` (Vector3) guardan la última dirección mirada; `get_facing_name()` devuelve una de 8: `right, down_right, down, down_left, left, up_left, up, up_right`.
 - `get_anim_state()` → `idle | walk | run | attack`.
-- **Sprites**: el nodo `Sprite` (AnimatedSprite3D) ya tiene billboard Y, filtro nearest, alpha cut Discard (proyecta sombra) y `shaded`. Al asignarle un `SpriteFrames` se oculta la cápsula placeholder automáticamente. Nombrar animaciones `<estado>_<direccion>`, p.ej. `walk_down_left`. Ajustar `pixel_size` (0.025 por defecto) y la altura del nodo para que los pies toquen el suelo. Importar PNGs con filtro Nearest y sin mipmaps.
+- `attack()`: bloquea movimiento y giro, reproduce `attack_<dir>` una vez y vuelve a idle/walk al terminar (`animation_finished`). El golpe (`take_hit` a lo que esté en `AttackHitbox`) se aplica al llegar al frame `hit_frames.attack` del SpriteFrames. Sin animación de ataque usa `fallback_attack_duration`/`fallback_attack_hit_time`.
+- **Sprites**: nodo `Sprite` (AnimatedSprite3D) con billboard Y, filtro nearest, alpha cut Discard (proyecta sombra), `shaded`. `setup_sprite()` lee la metadata del SpriteFrames: `pixel_size = character_height / body_height_px` (héroe 1.65 m; puertas 1.7 m) y `offset.y = foot_offset_px` (pies en el origen = suelo). Sin SpriteFrames se muestra la cápsula placeholder.
+- **Fallback de animaciones** (`_resolve_animation`, cacheado): misma dirección → vecinas de más cercana a más lejana (en diagonales primero la horizontal: `down_right → right → down`) → espejo `left↔right` con `flip_h` → estados alternativos (`run → walk → idle`, `attack → idle`, `idle →` frame 0 de walk en pausa). Funciona con 4 u 8 direcciones y con estados incompletos; al agregar animaciones no hay que tocar código.
+- Velocidad de animación: FPS por estado en el SpriteFrames + multiplicadores `idle/walk/run_anim_speed`. Si `run` cae a `walk`, se acelera ×(run_speed/walk_speed).
+
+## Pipeline de sprites (PixelLab → SpriteFrames)
+
+1. Exportar el personaje de PixelLab y descomprimirlo tal cual en `assets/sprites/<pj>/` (con `metadata.json`).
+2. Importar y generar:
+   ```bash
+   "/c/Users/daniel/Downloads/GODOT/Godot_v4.7.2-stable_win64_console.exe" --headless --path . --import
+   "/c/Users/daniel/Downloads/GODOT/Godot_v4.7.2-stable_win64_console.exe" --headless --path . -s res://tools/build_sprite_frames.gd -- res://assets/sprites/hero res://resources/hero_frames.tres
+   ```
+3. Volver a correrlo cada vez que se regenere o agregue una animación. No editar `hero_frames.tres` a mano (se sobreescribe).
+
+- Lee `states[].frames.rotations` (1 frame por dirección, prioridad baja) y `states[].frames.animations` (`{nombre: {direccion: [pngs]}}`). Sin metadata escanea `<anim>/<direccion>/*.png` y `<estado>/rotations/<direccion>.png`.
+- Nombres de PixelLab → estado por palabra clave: idle/breath/stand → `idle`, walk → `walk`, run/sprint → `run`, attack/slash/swing/strike/punch/kick → `attack`. Direcciones `south/north-east/...` → `down/up_right/...`.
+- `sprite_import.json` (opcional, en la carpeta del export): `aliases` (nombre exacto → estado), `fps`, `loop`, `hit_frame` (frame del golpe; por defecto la mitad).
+- Guarda metadata en el SpriteFrames: `hit_frames`, `foot_offset_px`, `body_height_px`, `frame_height_px` (calculados con el bounding box opaco de los PNG).
+- Importar PNGs con el preset 2D por defecto (lossless, sin mipmaps); el filtro nearest lo pone el nodo.
 
 ## Look HD-2D — dónde ajustar
 

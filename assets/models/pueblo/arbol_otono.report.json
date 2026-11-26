@@ -1,0 +1,42 @@
+{
+  "source": "assets/models/_source/pueblo/arbol_otono.glb",
+  "output": "assets/models/pueblo/arbol_otono.glb",
+  "texture": "assets/models/pueblo/arbol_otono_albedo.png",
+  "faces_in": 32477,
+  "faces_out": 6370,
+  "scale": 5.9951,
+  "front_was": "+Z",
+  "size_godot_m": [
+    4.373,
+    6.067,
+    4.043
+  ],
+  "size_godot_m_note": "[ancho X, alto Y, profundidad Z]",
+  "walls_footprint_godot": {
+    "center": [
+      0.026,
+      0.0,
+      -0.004
+    ],
+    "size_xz": [
+      2.066,
+      1.015
+    ]
+  },
+  "textures": [
+    {
+      "original": [
+        1024,
+        1024
+      ],
+      "final": [
+        1024,
+        1024
+      ],
+      "light_spots_fixed": {
+        "spots": 19,
+        "pixels": 2176
+      }
+    }
+  ]
+}

@@ -105,8 +105,10 @@ func _meshes_of(root: Node) -> Array:
 func _apply(m: GeometryInstance3D, v: float) -> void:
 	if not _uses_dither.has(m):
 		var mat := m.material_override as ShaderMaterial
-		_uses_dither[m] = mat != null and mat.shader != null \
-				and mat.shader.code.contains("instance uniform float occlusion_fade")
+		# El uniform puede venir de un include (hd2d_prop_common.gdshaderinc).
+		_uses_dither[m] = mat != null and mat.shader != null and (
+				mat.shader.code.contains("instance uniform float occlusion_fade")
+				or mat.shader.code.contains("hd2d_prop_common.gdshaderinc"))
 	if _uses_dither[m]:
 		m.set_instance_shader_parameter(&"occlusion_fade", v)
 	else:

@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/pueblo/arbol_otono.glb" id="1_model"]
+[ext_resource type="Shader" path="res://shaders/foliage_hd2d.gdshader" id="2_shader"]
+[ext_resource type="Texture2D" path="res://assets/models/pueblo/arbol_otono_albedo.png" id="3_albedo"]
+[ext_resource type="Script" path="res://scripts/props/model_prop.gd" id="4_prop"]
+
+[sub_resource type="ShaderMaterial" id="Mat_arbol"]
+render_priority = 0
+shader = ExtResource("2_shader")
+shader_parameter/albedo_texture = ExtResource("3_albedo")
+shader_parameter/brightness = 1.12
+shader_parameter/saturation = 1.2
+shader_parameter/contrast = 1.06
+shader_parameter/tint = Color(1, 0.96, 0.9, 1)
+shader_parameter/roughness = 0.9
+shader_parameter/specular = 0.25
+shader_parameter/canopy_start = 2.3
+shader_parameter/canopy_full = 3.3
+shader_parameter/wind_strength = 0.03
+shader_parameter/wind_speed = 1.1
+shader_parameter/wind_direction = Vector2(1, 0.35)
+shader_parameter/leaf_flutter = 0.3
+
+[sub_resource type="CylinderShape3D" id="Cyl_trunk"]
+height = 2.4
+radius = 0.35
+
+[sub_resource type="CylinderShape3D" id="Cyl_canopy"]
+height = 3.5
+radius = 1.8
+
+[node name="ArbolOtono" type="StaticBody3D"]
+script = ExtResource("4_prop")
+material = SubResource("Mat_arbol")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="Trunk" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 1.2, 0)
+shape = SubResource("Cyl_trunk")
+
+[node name="CameraOccluder" type="StaticBody3D" parent="." groups=["camera_occluder_proxy"]]
+collision_layer = 8
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CameraOccluder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 4.35, 0.35)
+shape = SubResource("Cyl_canopy")

@@ -29,10 +29,10 @@ scenes/
   levels/                Niveles jugables (pueblo_test.tscn = escena principal)
   player/                player.tscn (CharacterBody3D)
   camera/                octopath_camera.tscn (Camera3D + CameraAttributesPractical)
-  props/                 Props reutilizables: casa_comun.tscn, casa_carreta.tscn (modelos 3D) + placeholders (casa, árbol, farol)
+  props/                 Props reutilizables: casa_comun, casa_carreta, arbol_otono (modelos 3D) + placeholders (casa, árbol, farol; ya no usados en pueblo_test salvo el farol)
   ui/                    Overlays (vignette.tscn)
 scripts/                 GDScript, espejando la estructura de scenes/ (player/, camera/, ...)
-shaders/                 .gdshader (vignette, prop_hd2d)
+shaders/                 .gdshader (vignette, prop_hd2d, foliage_hd2d) + includes/hd2d_prop_common.gdshaderinc
 resources/               Recursos compartidos (.tres): hd2d_environment.tres, hero_frames.tres (generado)
 tools/                   Scripts de línea de comandos (build_sprite_frames.gd, optimize_model.py para Blender)
 assets/sprites/<pj>/     Exports de PixelLab tal cual (metadata.json + PNGs) + sprite_import.json
@@ -97,16 +97,21 @@ assets/textures/         Texturas de terreno/props
    ```
    - Une mallas, rota el frente a **+Z** (`--front` = hacia dónde mira la puerta en el original, en ejes de Godot), escala (`--scale` o `--height`), pivote en el centro de la base, Decimate Collapse si pasa de `--max-faces` (20000), reduce texturas > `--max-tex` (2048), fuerza **metallic=0** (TRELLIS exporta metallic=1 → se ve casi negro).
    - `--fix-light-spots` (opt-in): rellena manchas pequeñas gris claro/blancas de la textura (artefactos de horneado de TRELLIS, p.ej. el "fondo" visto entre los rayos de una rueda) con el color vecino. Solo manchas < `--spot-max-area` px (600), así que paredes claras grandes no se tocan. Lo reduce pero no siempre lo elimina: si el entorno de la mancha también es claro, queda un tono apagado.
+   - `--pivot trunk`: centra el pivote en el pie del tronco (vértices del 3% inferior) en vez del centro de la caja; para árboles con tronco inclinado.
+   - Árbol otoño: `--height 6 --max-faces 6500 --pivot trunk --fix-light-spots` → 32.5k → 6.4k caras, 6.1 m, copa desde ~2.6 m.
    - Exporta el `.glb` **sin textura** + `<nombre>_albedo.png` aparte con un `.png.import` propio (VRAM + mipmaps: los `[importer_defaults]` del proyecto son para pixel art y harían titilar el modelo) + `<nombre>.report.json` (caras, tamaño, huella de paredes para la colisión).
    - Escala: medir la puerta en un render del original y apuntar a **puerta ≈ 1.8 m** (héroe 1.65 m). Casa común: ×12.3 → 10.5 × 7.0 × 12.2 m (`--front +X`). Casa carreta: ×7.9 → 7.9 × 7.3 × 4.7 m (`--front +Z --fix-light-spots`; la puerta está en una plataforma a ~1 m con escalones, ruedas en el suelo).
-3. Escena en `scenes/props/<nombre>.tscn`: raíz `StaticBody3D` con `scripts/props/model_prop.gd` (`ModelProp`, `@tool`: aplica `material` como override a todas las mallas), instancia del `.glb`, y colisión con cajas simples (paredes, sin aleros).
+3. Escena en `scenes/props/<nombre>.tscn`: raíz `StaticBody3D` con `scripts/props/model_prop.gd` (`ModelProp`, `@tool`: aplica `material` como override a todas las mallas, e `instance_params` (Dictionary) como `instance uniform` por instancia), instancia del `.glb`, y colisión con cajas simples (paredes, sin aleros).
 4. Material: `ShaderMaterial` con `shaders/prop_hd2d.gdshader` → `brightness`, `saturation`, `contrast`, `tint`, `roughness`, `specular` (ajustes en espacio perceptual). Casa común y casa carreta (mismos valores para que combinen): 1.12 / 1.2 / 1.06 / tinte (1, 0.96, 0.9) / 0.9 / 0.25. Más de ~1.25 de brillo con 1.3 de saturación quema los techos.
+   - Vegetación: `shaders/foliage_hd2d.gdshader` (mismo ajuste de color y dither por el include común) + viento solo en la copa (vertex shader: `canopy_start/full`, `wind_strength` 0.03, `wind_speed`, `wind_direction` en ejes del MUNDO, `leaf_flutter`; fase distinta por árbol; también mueve la sombra) + tono por árbol con `instance_params`: `hue_variation` (-1 más rojo … +1 más naranja; **acerca** el tono a `hue_red`/`hue_orange` por el camino más corto, no lo rota: rotar volvía violetas los rosados) y `canopy_saturation`.
+   - Colisión de árboles: solo un cilindro delgado en el tronco (el héroe pasa bajo la copa) + `CameraOccluder` cilíndrico en la copa.
+6. **Varios árboles**: rotación Y aleatoria, escala 0.8–1.2 y `hue_variation`/`canopy_saturation` distintos por instancia, escritos en el `.tscn` (deterministas, editables). Rendimiento medido con 10 árboles (RTX 3060 Ti, 1600×900, vsync off): +0.4–0.5 ms/frame (254 → 231 FPS); cada árbol se dibuja también en las pasadas de sombra (4 cascadas del sol + omnis de faroles), por eso suben draw calls/triángulos más que las caras del modelo. No hace falta MultiMesh hasta decenas de árboles (y se perdería fader/colisión por árbol).
 5. **Proxy de oclusión**: agregar un hijo `CameraOccluder` (StaticBody3D, grupo `camera_occluder_proxy`, `collision_layer = 8`, `collision_mask = 0`) con una caja que cubra todo el volumen visible (techo incluido). Sin él, solo la colisión de paredes dispara el desvanecido y un techo alto puede tapar al héroe sin detectarse.
 
 ## Desvanecido de oclusión (cámara)
 
 - `OctopathCamera/OcclusionFader` (`scripts/camera/camera_occlusion_fader.gd`): cada frame lanza rayos cámara → jugador (pies, pecho, cabeza y costados) contra capas 1 + 4. Lo que golpea se desvanece (`fade_speed`, ~0.25 s) y vuelve al dejar de tapar. Un `CameraOccluder` desvanece a su padre (el prop entero). Grupo `no_camera_fade` para excluir algo.
-- Materiales con `instance uniform float occlusion_fade` (`prop_hd2d.gdshader`): **dither** opaco (patrón Bayer 4×4, `occlusion_max` = 0.75), sin problemas de orden y **la sombra se mantiene** (no descarta en `IN_SHADOW_PASS`). Por instancia: no duplica materiales.
+- Materiales con `instance uniform float occlusion_fade` (`prop_hd2d`, `foliage_hd2d`; el fader también detecta el include `hd2d_prop_common.gdshaderinc`): **dither** opaco (patrón Bayer 4×4, `occlusion_max` = 0.75), sin problemas de orden y **la sombra se mantiene** (no descarta en `IN_SHADOW_PASS`). Por instancia: no duplica materiales.
 - Otros materiales (placeholders): fallback `GeometryInstance3D.transparency` (`fallback_transparency`).
 
 ## Look HD-2D — dónde ajustar

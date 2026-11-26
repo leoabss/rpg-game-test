@@ -18,6 +18,9 @@ Opciones:
                     alrededor. Solo manchas de menos de --spot-max-area px, así que
                     superficies claras grandes (paredes encaladas) no se tocan. Opt-in.
   --spot-max-area N Área máxima (px) de una mancha a rellenar. Default 600.
+  --pivot MODO      bbox (default): centro XY de la caja. trunk: centro XY de los
+                    vértices más bajos (3% inferior de la altura) = pie del tronco;
+                    para árboles con tronco inclinado.
 
 Qué hace:
   1. Importa, une las mallas, aplica transformaciones.
@@ -61,7 +64,7 @@ def parse_args():
         raise SystemExit(__doc__)
     opts = {"in": argv[0], "out": argv[1], "max_faces": 20000, "max_tex": 2048,
             "scale": None, "height": None, "front": "+Z", "keep_metallic": False,
-            "fix_spots": False, "spot_max_area": 600}
+            "fix_spots": False, "spot_max_area": 600, "pivot": "bbox"}
     i = 2
     while i < len(argv):
         a = argv[i]
@@ -79,8 +82,11 @@ def parse_args():
         elif a == "--scale": opts["scale"] = float(val)
         elif a == "--height": opts["height"] = float(val)
         elif a == "--front": opts["front"] = val.upper()
+        elif a == "--pivot": opts["pivot"] = val.lower()
         else: raise SystemExit(f"Opción desconocida: {a}")
         i += 2
+    if opts["pivot"] not in ("bbox", "trunk"):
+        raise SystemExit("--pivot debe ser bbox o trunk")
     if opts["front"] not in FRONT_TO_ROT_Z:
         raise SystemExit(f"--front debe ser uno de {list(FRONT_TO_ROT_Z)}")
     return opts
@@ -192,7 +198,14 @@ def main():
     obj.data.transform(Matrix.Scale(scale, 4))
     # Pivote: centro de la base.
     mn, mx = world_bbox(obj)
-    obj.data.transform(Matrix.Translation(Vector((-(mn.x + mx.x) / 2, -(mn.y + mx.y) / 2, -mn.z))))
+    cx, cy = (mn.x + mx.x) / 2, (mn.y + mx.y) / 2
+    if o["pivot"] == "trunk":
+        cut = mn.z + 0.03 * (mx.z - mn.z)
+        base = [obj.matrix_world @ v.co for v in obj.data.vertices]
+        base = [p for p in base if p.z <= cut]
+        cx = (min(p.x for p in base) + max(p.x for p in base)) / 2
+        cy = (min(p.y for p in base) + max(p.y for p in base)) / 2
+    obj.data.transform(Matrix.Translation(Vector((-cx, -cy, -mn.z))))
 
     # Decimate.
     faces_before = len(obj.data.polygons)

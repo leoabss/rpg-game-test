@@ -29,7 +29,7 @@ scenes/
   levels/                Niveles jugables (pueblo_test.tscn = escena principal)
   player/                player.tscn (CharacterBody3D)
   camera/                octopath_camera.tscn (Camera3D + CameraAttributesPractical)
-  props/                 Props reutilizables: casa_comun.tscn (modelo 3D) + placeholders (casa, árbol, farol)
+  props/                 Props reutilizables: casa_comun.tscn, casa_carreta.tscn (modelos 3D) + placeholders (casa, árbol, farol)
   ui/                    Overlays (vignette.tscn)
 scripts/                 GDScript, espejando la estructura de scenes/ (player/, camera/, ...)
 shaders/                 .gdshader (vignette, prop_hd2d)
@@ -96,10 +96,11 @@ assets/textures/         Texturas de terreno/props
    "/c/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup --python tools/optimize_model.py -- assets/models/_source/pueblo/casa_comun.glb assets/models/pueblo/casa_comun.glb --front +X --scale 12.3
    ```
    - Une mallas, rota el frente a **+Z** (`--front` = hacia dónde mira la puerta en el original, en ejes de Godot), escala (`--scale` o `--height`), pivote en el centro de la base, Decimate Collapse si pasa de `--max-faces` (20000), reduce texturas > `--max-tex` (2048), fuerza **metallic=0** (TRELLIS exporta metallic=1 → se ve casi negro).
+   - `--fix-light-spots` (opt-in): rellena manchas pequeñas gris claro/blancas de la textura (artefactos de horneado de TRELLIS, p.ej. el "fondo" visto entre los rayos de una rueda) con el color vecino. Solo manchas < `--spot-max-area` px (600), así que paredes claras grandes no se tocan. Lo reduce pero no siempre lo elimina: si el entorno de la mancha también es claro, queda un tono apagado.
    - Exporta el `.glb` **sin textura** + `<nombre>_albedo.png` aparte con un `.png.import` propio (VRAM + mipmaps: los `[importer_defaults]` del proyecto son para pixel art y harían titilar el modelo) + `<nombre>.report.json` (caras, tamaño, huella de paredes para la colisión).
-   - Escala: medir la puerta en un render del original y apuntar a **puerta ≈ 1.8 m** (héroe 1.65 m). Casa común: ×12.3 → 10.5 × 7.0 × 12.2 m.
+   - Escala: medir la puerta en un render del original y apuntar a **puerta ≈ 1.8 m** (héroe 1.65 m). Casa común: ×12.3 → 10.5 × 7.0 × 12.2 m (`--front +X`). Casa carreta: ×7.9 → 7.9 × 7.3 × 4.7 m (`--front +Z --fix-light-spots`; la puerta está en una plataforma a ~1 m con escalones, ruedas en el suelo).
 3. Escena en `scenes/props/<nombre>.tscn`: raíz `StaticBody3D` con `scripts/props/model_prop.gd` (`ModelProp`, `@tool`: aplica `material` como override a todas las mallas), instancia del `.glb`, y colisión con cajas simples (paredes, sin aleros).
-4. Material: `ShaderMaterial` con `shaders/prop_hd2d.gdshader` → `brightness`, `saturation`, `contrast`, `tint`, `roughness`, `specular` (ajustes en espacio perceptual). Casa común: 1.12 / 1.2 / 1.06 / tinte (1, 0.96, 0.9) / 0.9 / 0.25. Más de ~1.25 de brillo con 1.3 de saturación quema los techos.
+4. Material: `ShaderMaterial` con `shaders/prop_hd2d.gdshader` → `brightness`, `saturation`, `contrast`, `tint`, `roughness`, `specular` (ajustes en espacio perceptual). Casa común y casa carreta (mismos valores para que combinen): 1.12 / 1.2 / 1.06 / tinte (1, 0.96, 0.9) / 0.9 / 0.25. Más de ~1.25 de brillo con 1.3 de saturación quema los techos.
 5. **Proxy de oclusión**: agregar un hijo `CameraOccluder` (StaticBody3D, grupo `camera_occluder_proxy`, `collision_layer = 8`, `collision_mask = 0`) con una caja que cubra todo el volumen visible (techo incluido). Sin él, solo la colisión de paredes dispara el desvanecido y un techo alto puede tapar al héroe sin detectarse.
 
 ## Desvanecido de oclusión (cámara)

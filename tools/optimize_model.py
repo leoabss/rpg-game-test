@@ -13,6 +13,11 @@ Opciones:
                     de Godot: +X, -X, +Z, -Z. Se rota para que quede mirando +Z
                     (hacia la cámara), la convención del proyecto. Default +Z.
   --keep-metallic   No forzar metallic=0 (TRELLIS exporta metallic=1 -> se ve negro).
+  --fix-light-spots Rellena manchas pequeñas gris claro/blancas de la textura (artefactos
+                    de horneado de TRELLIS, p.ej. dentro de ruedas) con el color de
+                    alrededor. Solo manchas de menos de --spot-max-area px, así que
+                    superficies claras grandes (paredes encaladas) no se tocan. Opt-in.
+  --spot-max-area N Área máxima (px) de una mancha a rellenar. Default 600.
 
 Qué hace:
   1. Importa, une las mallas, aplica transformaciones.
@@ -55,15 +60,20 @@ def parse_args():
     if len(argv) < 2:
         raise SystemExit(__doc__)
     opts = {"in": argv[0], "out": argv[1], "max_faces": 20000, "max_tex": 2048,
-            "scale": None, "height": None, "front": "+Z", "keep_metallic": False}
+            "scale": None, "height": None, "front": "+Z", "keep_metallic": False,
+            "fix_spots": False, "spot_max_area": 600}
     i = 2
     while i < len(argv):
         a = argv[i]
-        if a == "--keep-metallic":
-            opts["keep_metallic"] = True
+        if a in ("--keep-metallic", "--fix-light-spots"):
+            opts["keep_metallic" if a == "--keep-metallic" else "fix_spots"] = True
             i += 1
             continue
         val = argv[i + 1]
+        if a == "--spot-max-area":
+            opts["spot_max_area"] = int(val)
+            i += 2
+            continue
         if a == "--max-faces": opts["max_faces"] = int(val)
         elif a == "--max-tex": opts["max_tex"] = int(val)
         elif a == "--scale": opts["scale"] = float(val)
@@ -74,6 +84,66 @@ def parse_args():
     if opts["front"] not in FRONT_TO_ROT_Z:
         raise SystemExit(f"--front debe ser uno de {list(FRONT_TO_ROT_Z)}")
     return opts
+
+
+def fix_light_spots(img, max_area, min_value=150 / 255, max_sat=45 / 255):
+    """Rellena manchas pequeñas claras y poco saturadas con el color vecino.
+    Devuelve (manchas rellenadas, píxeles rellenados)."""
+    import numpy as np
+    w, h = img.size
+    px = np.array(img.pixels[:], dtype=np.float32).reshape(h, w, 4)
+    rgb = px[..., :3]
+    lo = rgb.min(axis=2)
+    cand = (lo > min_value) & ((rgb.max(axis=2) - lo) < max_sat)
+
+    # Componentes conexas (4 vecinos); solo se rellenan las pequeñas.
+    mask = np.zeros_like(cand)
+    seen = np.zeros_like(cand)
+    spots = 0
+    for y0, x0 in zip(*np.nonzero(cand)):
+        if seen[y0, x0]:
+            continue
+        stack, comp = [(y0, x0)], []
+        seen[y0, x0] = True
+        while stack:
+            y, x = stack.pop()
+            comp.append((y, x))
+            for ny, nx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+                if 0 <= ny < h and 0 <= nx < w and cand[ny, nx] and not seen[ny, nx]:
+                    seen[ny, nx] = True
+                    stack.append((ny, nx))
+        if len(comp) <= max_area:
+            spots += 1
+            ys, xs = zip(*comp)
+            mask[list(ys), list(xs)] = True
+    # Crecer la máscara 2 px: el borde antialiasado de la mancha queda fuera del
+    # umbral pero sigue siendo claro, y si no se incluye deja un halo.
+    for _ in range(2):
+        g = np.pad(mask, 1)
+        mask = mask | g[:-2, 1:-1] | g[2:, 1:-1] | g[1:-1, :-2] | g[1:-1, 2:]
+    filled = int(mask.sum())
+
+    # Relleno por dilatación: cada pasada copia el promedio de los vecinos conocidos.
+    for _ in range(256):
+        if not mask.any():
+            break
+        known = np.pad(~mask, 1)
+        col = np.pad(rgb, ((1, 1), (1, 1), (0, 0)))
+        acc = np.zeros_like(rgb)
+        cnt = np.zeros((h, w), dtype=np.float32)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dy == 0 and dx == 0:
+                    continue
+                k = known[1 + dy:1 + dy + h, 1 + dx:1 + dx + w]
+                acc += col[1 + dy:1 + dy + h, 1 + dx:1 + dx + w] * k[..., None]
+                cnt += k
+        fill = mask & (cnt > 0)
+        rgb[fill] = acc[fill] / cnt[fill][:, None]
+        mask &= ~fill
+    px[..., :3] = rgb
+    img.pixels[:] = px.ravel()
+    return spots, filled
 
 
 def world_bbox(obj):
@@ -160,8 +230,12 @@ def main():
                 if img.packed_file:
                     img.unpack(method="REMOVE")  # pasa a usar filepath_raw
                     img.filepath_raw = os.path.abspath(tex_path)
+                info = {"original": [w0, h0], "final": list(img.size)}
+                if o["fix_spots"]:
+                    spots, filled = fix_light_spots(img, o["spot_max_area"])
+                    info["light_spots_fixed"] = {"spots": spots, "pixels": filled}
                 img.save()
-                tex_info.append({"original": [w0, h0], "final": list(img.size)})
+                tex_info.append(info)
 
     # Exportar GLB sin imágenes (la textura va aparte con su propio import).
     bpy.ops.object.select_all(action="DESELECT")

@@ -1,0 +1,42 @@
+{
+  "source": "assets/models/_source/pueblo/casa_carreta.glb",
+  "output": "assets/models/pueblo/casa_carreta.glb",
+  "texture": "assets/models/pueblo/casa_carreta_albedo.png",
+  "faces_in": 33561,
+  "faces_out": 19600,
+  "scale": 7.9,
+  "front_was": "+Z",
+  "size_godot_m": [
+    7.873,
+    7.296,
+    4.733
+  ],
+  "size_godot_m_note": "[ancho X, alto Y, profundidad Z]",
+  "walls_footprint_godot": {
+    "center": [
+      -0.007,
+      0.0,
+      -0.025
+    ],
+    "size_xz": [
+      7.864,
+      4.544
+    ]
+  },
+  "textures": [
+    {
+      "original": [
+        1024,
+        1024
+      ],
+      "final": [
+        1024,
+        1024
+      ],
+      "light_spots_fixed": {
+        "spots": 36,
+        "pixels": 4234
+      }
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/pueblo/casa_carreta.glb" id="1_model"]
+[ext_resource type="Shader" path="res://shaders/prop_hd2d.gdshader" id="2_shader"]
+[ext_resource type="Texture2D" path="res://assets/models/pueblo/casa_carreta_albedo.png" id="3_albedo"]
+[ext_resource type="Script" path="res://scripts/props/model_prop.gd" id="4_prop"]
+
+[sub_resource type="ShaderMaterial" id="Mat_carreta"]
+render_priority = 0
+shader = ExtResource("2_shader")
+shader_parameter/albedo_texture = ExtResource("3_albedo")
+shader_parameter/brightness = 1.12
+shader_parameter/saturation = 1.2
+shader_parameter/contrast = 1.06
+shader_parameter/tint = Color(1, 0.96, 0.9, 1)
+shader_parameter/roughness = 0.9
+shader_parameter/specular = 0.25
+
+[sub_resource type="BoxShape3D" id="Box_body"]
+size = Vector3(7.6, 4, 3.8)
+
+[sub_resource type="BoxShape3D" id="Box_occluder"]
+size = Vector3(7.6, 7, 4.4)
+
+[node name="CasaCarreta" type="StaticBody3D"]
+script = ExtResource("4_prop")
+material = SubResource("Mat_carreta")
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="Body" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 2, -0.2)
+shape = SubResource("Box_body")
+
+[node name="CameraOccluder" type="StaticBody3D" parent="." groups=["camera_occluder_proxy"]]
+collision_layer = 8
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CameraOccluder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, -0.1)
+shape = SubResource("Box_occluder")

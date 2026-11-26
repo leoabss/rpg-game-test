@@ -49,7 +49,7 @@ assets/textures/         Texturas de terreno/props
 - Escala del mundo: **1 unidad = 1 metro**. Personaje ≈ 1.6 m.
 - Movimiento en el plano XZ: input "arriba" = −Z (alejándose de la cámara), "abajo" = +Z.
 - Las props van como escenas propias en `scenes/props/` e instanciadas en los niveles.
-- Capas de física: 1 `world`, 2 `player`, 3 `enemies`. El hitbox de ataque del jugador detecta la capa 3 y llama `take_hit(direction)` en los cuerpos que lo implementen.
+- Capas de física: 1 `world`, 2 `player`, 3 `enemies`, 4 `camera_occluder` (solo para los rayos del fader de cámara; nada choca con ella). El hitbox de ataque del jugador detecta la capa 3 y llama `take_hit(direction)` en los cuerpos que lo implementen.
 - Física 3D = **Jolt** (default en Godot 4.6+): las `Area3D` **no detectan `StaticBody3D`** por defecto. Enemigos/objetos golpeables deben ser `CharacterBody3D`/`RigidBody3D`/`AnimatableBody3D`.
 
 ## Input Map
@@ -100,7 +100,13 @@ assets/textures/         Texturas de terreno/props
    - Escala: medir la puerta en un render del original y apuntar a **puerta ≈ 1.8 m** (héroe 1.65 m). Casa común: ×12.3 → 10.5 × 7.0 × 12.2 m.
 3. Escena en `scenes/props/<nombre>.tscn`: raíz `StaticBody3D` con `scripts/props/model_prop.gd` (`ModelProp`, `@tool`: aplica `material` como override a todas las mallas), instancia del `.glb`, y colisión con cajas simples (paredes, sin aleros).
 4. Material: `ShaderMaterial` con `shaders/prop_hd2d.gdshader` → `brightness`, `saturation`, `contrast`, `tint`, `roughness`, `specular` (ajustes en espacio perceptual). Casa común: 1.12 / 1.2 / 1.06 / tinte (1, 0.96, 0.9) / 0.9 / 0.25. Más de ~1.25 de brillo con 1.3 de saturación quema los techos.
-5. **Layout**: con la cámara baja, todo lo alto entre la cámara y el jugador (hasta ~10 m por delante en +Z) lo tapa. Dejar libre el corredor frente a las puertas.
+5. **Proxy de oclusión**: agregar un hijo `CameraOccluder` (StaticBody3D, grupo `camera_occluder_proxy`, `collision_layer = 8`, `collision_mask = 0`) con una caja que cubra todo el volumen visible (techo incluido). Sin él, solo la colisión de paredes dispara el desvanecido y un techo alto puede tapar al héroe sin detectarse.
+
+## Desvanecido de oclusión (cámara)
+
+- `OctopathCamera/OcclusionFader` (`scripts/camera/camera_occlusion_fader.gd`): cada frame lanza rayos cámara → jugador (pies, pecho, cabeza y costados) contra capas 1 + 4. Lo que golpea se desvanece (`fade_speed`, ~0.25 s) y vuelve al dejar de tapar. Un `CameraOccluder` desvanece a su padre (el prop entero). Grupo `no_camera_fade` para excluir algo.
+- Materiales con `instance uniform float occlusion_fade` (`prop_hd2d.gdshader`): **dither** opaco (patrón Bayer 4×4, `occlusion_max` = 0.75), sin problemas de orden y **la sombra se mantiene** (no descarta en `IN_SHADOW_PASS`). Por instancia: no duplica materiales.
+- Otros materiales (placeholders): fallback `GeometryInstance3D.transparency` (`fallback_transparency`).
 
 ## Look HD-2D — dónde ajustar
 

@@ -26,6 +26,9 @@ size = Vector3(0.9, 1.7, 0.1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_house"]
 size = Vector3(4, 3, 4)
 
+[sub_resource type="BoxShape3D" id="Box_occluder"]
+size = Vector3(4.4, 4.7, 4.4)
+
 [node name="House" type="StaticBody3D"]
 
 [node name="Walls" type="MeshInstance3D" parent="."]
@@ -43,3 +46,11 @@ mesh = SubResource("BoxMesh_door")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 shape = SubResource("BoxShape3D_house")
+
+[node name="CameraOccluder" type="StaticBody3D" parent="." groups=["camera_occluder_proxy"]]
+collision_layer = 8
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CameraOccluder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
+shape = SubResource("Box_occluder")

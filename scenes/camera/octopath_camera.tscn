@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/camera/octopath_camera.gd" id="1_cam"]
+[ext_resource type="Script" path="res://scripts/camera/camera_occlusion_fader.gd" id="2_fader"]
 
 [sub_resource type="CameraAttributesPractical" id="CamAttrs"]
 dof_blur_far_enabled = true
@@ -18,3 +19,6 @@ current = true
 fov = 28.0
 far = 200.0
 script = ExtResource("1_cam")
+
+[node name="OcclusionFader" type="Node" parent="."]
+script = ExtResource("2_fader")

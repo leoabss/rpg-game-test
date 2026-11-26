@@ -1,0 +1,38 @@
+{
+  "source": "assets/models/_source/pueblo/casa_comun.glb",
+  "output": "assets/models/pueblo/casa_comun.glb",
+  "texture": "assets/models/pueblo/casa_comun_albedo.png",
+  "faces_in": 40818,
+  "faces_out": 19600,
+  "scale": 12.3,
+  "front_was": "+X",
+  "size_godot_m": [
+    10.544,
+    6.988,
+    12.186
+  ],
+  "size_godot_m_note": "[ancho X, alto Y, profundidad Z]",
+  "walls_footprint_godot": {
+    "center": [
+      0.272,
+      0.0,
+      0.052
+    ],
+    "size_xz": [
+      10.0,
+      12.074
+    ]
+  },
+  "textures": [
+    {
+      "original": [
+        1024,
+        1024
+      ],
+      "final": [
+        1024,
+        1024
+      ]
+    }
+  ]
+}

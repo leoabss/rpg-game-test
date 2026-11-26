@@ -5,6 +5,7 @@ RPG 2.5D con estética HD-2D (sprites pixel art billboard en mundo 3D, bloom, DO
 ## Cómo correr
 
 Godot: `C:\Users\daniel\Downloads\GODOT\Godot_v4.7.2-stable_win64.exe` (usar `_console.exe` para ver logs en terminal).
+Blender: `C:\Program Files\Blender Foundation\Blender 5.3\blender.exe` (usar en background: `-b --factory-startup --python <script> -- <args>`).
 
 ```bash
 # Abrir el editor
@@ -28,14 +29,15 @@ scenes/
   levels/                Niveles jugables (pueblo_test.tscn = escena principal)
   player/                player.tscn (CharacterBody3D)
   camera/                octopath_camera.tscn (Camera3D + CameraAttributesPractical)
-  props/                 Props reutilizables (casa, árbol, farol) — placeholders por ahora
+  props/                 Props reutilizables: casa_comun.tscn (modelo 3D) + placeholders (casa, árbol, farol)
   ui/                    Overlays (vignette.tscn)
 scripts/                 GDScript, espejando la estructura de scenes/ (player/, camera/, ...)
-shaders/                 .gdshader (vignette.gdshader)
+shaders/                 .gdshader (vignette, prop_hd2d)
 resources/               Recursos compartidos (.tres): hd2d_environment.tres, hero_frames.tres (generado)
-tools/                   Scripts de línea de comandos (build_sprite_frames.gd)
+tools/                   Scripts de línea de comandos (build_sprite_frames.gd, optimize_model.py para Blender)
 assets/sprites/<pj>/     Exports de PixelLab tal cual (metadata.json + PNGs) + sprite_import.json
-assets/models/           Modelos 3D (.glb)
+assets/models/<grupo>/   Modelos optimizados (.glb + _albedo.png + .report.json), generados por optimize_model.py
+assets/models/_source/   Originales (TRELLIS, etc.) tal cual; tiene .gdignore (Godot no los importa)
 assets/textures/         Texturas de terreno/props
 ```
 
@@ -85,6 +87,20 @@ assets/textures/         Texturas de terreno/props
 - **Lienzos mixtos**: PixelLab exporta algunos clips en otro tamaño (las `south` del héroe vienen en 68×68, el resto 48×48) y con los pies a distinta altura. El builder alinea cada clip por su línea de pies en un lienzo común con `AtlasTexture.margin` (héroe: 68×70, pies en fila 58).
 - Guarda metadata en el SpriteFrames: `hit_frames` (`{estado: {dir: frame}}`), `foot_offset_px`, `body_height_px` (de la pose idle), `frame_height_px` (calculados con el bounding box opaco de los PNG).
 - Import de PNG: `[importer_defaults]` en `project.godot` fuerza lossless, sin mipmaps y **`detect_3d` desactivado** (si no, Godot recomprime a VRAM S3TC + mipmaps al ver la textura en 3D y el pixel art se ensucia). El builder avisa si algún `.import` no cumple. El filtro nearest lo pone el nodo.
+
+## Pipeline de modelos 3D (TRELLIS → Godot)
+
+1. Guardar el original en `assets/models/_source/<grupo>/<nombre>.glb`.
+2. Optimizar con Blender:
+   ```bash
+   "/c/Program Files/Blender Foundation/Blender 5.3/blender.exe" -b --factory-startup --python tools/optimize_model.py -- assets/models/_source/pueblo/casa_comun.glb assets/models/pueblo/casa_comun.glb --front +X --scale 12.3
+   ```
+   - Une mallas, rota el frente a **+Z** (`--front` = hacia dónde mira la puerta en el original, en ejes de Godot), escala (`--scale` o `--height`), pivote en el centro de la base, Decimate Collapse si pasa de `--max-faces` (20000), reduce texturas > `--max-tex` (2048), fuerza **metallic=0** (TRELLIS exporta metallic=1 → se ve casi negro).
+   - Exporta el `.glb` **sin textura** + `<nombre>_albedo.png` aparte con un `.png.import` propio (VRAM + mipmaps: los `[importer_defaults]` del proyecto son para pixel art y harían titilar el modelo) + `<nombre>.report.json` (caras, tamaño, huella de paredes para la colisión).
+   - Escala: medir la puerta en un render del original y apuntar a **puerta ≈ 1.8 m** (héroe 1.65 m). Casa común: ×12.3 → 10.5 × 7.0 × 12.2 m.
+3. Escena en `scenes/props/<nombre>.tscn`: raíz `StaticBody3D` con `scripts/props/model_prop.gd` (`ModelProp`, `@tool`: aplica `material` como override a todas las mallas), instancia del `.glb`, y colisión con cajas simples (paredes, sin aleros).
+4. Material: `ShaderMaterial` con `shaders/prop_hd2d.gdshader` → `brightness`, `saturation`, `contrast`, `tint`, `roughness`, `specular` (ajustes en espacio perceptual). Casa común: 1.12 / 1.2 / 1.06 / tinte (1, 0.96, 0.9) / 0.9 / 0.25. Más de ~1.25 de brillo con 1.3 de saturación quema los techos.
+5. **Layout**: con la cámara baja, todo lo alto entre la cámara y el jugador (hasta ~10 m por delante en +Z) lo tapa. Dejar libre el corredor frente a las puertas.
 
 ## Look HD-2D — dónde ajustar
 

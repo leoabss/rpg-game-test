@@ -1,0 +1,73 @@
+# RPG HD-2D (Godot 4.7.2 · GDScript)
+
+RPG 2.5D con estética HD-2D (sprites pixel art billboard en mundo 3D, bloom, DOF tilt-shift, niebla volumétrica). Renderer **Forward+** (obligatorio: la niebla volumétrica y SSAO no existen en Mobile/Compatibility).
+
+## Cómo correr
+
+Godot: `C:\Users\daniel\Downloads\GODOT\Godot_v4.7.2-stable_win64.exe` (usar `_console.exe` para ver logs en terminal).
+
+```bash
+# Abrir el editor
+"/c/Users/daniel/Downloads/GODOT/Godot_v4.7.2-stable_win64.exe" -e --path .
+
+# Jugar la escena principal (pueblo_test)
+"/c/Users/daniel/Downloads/GODOT/Godot_v4.7.2-stable_win64.exe" --path .
+
+# Verificación headless (importa recursos y corre ~120 frames; revisar SCRIPT ERROR / ERROR en la salida)
+"/c/Users/daniel/Downloads/GODOT/Godot_v4.7.2-stable_win64_console.exe" --headless --path . --import
+"/c/Users/daniel/Downloads/GODOT/Godot_v4.7.2-stable_win64_console.exe" --headless --path . --quit-after 120
+```
+
+Siempre correr la verificación headless después de cambiar scripts o escenas.
+
+## Estructura
+
+```
+project.godot            Config, Input Map, capas de física, calidad de sombras
+scenes/
+  levels/                Niveles jugables (pueblo_test.tscn = escena principal)
+  player/                player.tscn (CharacterBody3D)
+  camera/                octopath_camera.tscn (Camera3D + CameraAttributesPractical)
+  props/                 Props reutilizables (casa, árbol, farol) — placeholders por ahora
+  ui/                    Overlays (vignette.tscn)
+scripts/                 GDScript, espejando la estructura de scenes/ (player/, camera/, ...)
+shaders/                 .gdshader (vignette.gdshader)
+resources/               Recursos compartidos (.tres): hd2d_environment.tres
+assets/sprites/          Sprites/spritesheets (PixelLab)
+assets/models/           Modelos 3D (.glb)
+assets/textures/         Texturas de terreno/props
+```
+
+## Convenciones
+
+- Archivos y carpetas en `snake_case`; nodos en `PascalCase`; `class_name` en PascalCase para scripts reutilizables.
+- Identificadores de código en inglés, comentarios y docs en español.
+- GDScript tipado estático (`var x: float`, `:=`), `@export` + `@export_group` para todo lo ajustable.
+- Escala del mundo: **1 unidad = 1 metro**. Personaje ≈ 1.6 m.
+- Movimiento en el plano XZ: input "arriba" = −Z (alejándose de la cámara), "abajo" = +Z.
+- Las props van como escenas propias en `scenes/props/` e instanciadas en los niveles.
+- Capas de física: 1 `world`, 2 `player`, 3 `enemies`. El hitbox de ataque del jugador detecta la capa 3 y llama `take_hit(direction)` en los cuerpos que lo implementen.
+
+## Input Map
+
+| Acción | Teclas |
+|---|---|
+| `move_left/right/up/down` | WASD y flechas |
+| `run` | Shift |
+| `attack` | J y Espacio |
+
+## Player (`scripts/player/player.gd`)
+
+- Velocidad `walk_speed`/`run_speed`, `acceleration`/`deceleration` exportados.
+- `facing` (Vector2, espacio input) y `facing_3d` (Vector3) guardan la última dirección mirada; `get_facing_name()` devuelve una de 8: `right, down_right, down, down_left, left, up_left, up, up_right`.
+- `get_anim_state()` → `idle | walk | run | attack`.
+- **Sprites**: el nodo `Sprite` (AnimatedSprite3D) ya tiene billboard Y, filtro nearest, alpha cut Discard (proyecta sombra) y `shaded`. Al asignarle un `SpriteFrames` se oculta la cápsula placeholder automáticamente. Nombrar animaciones `<estado>_<direccion>`, p.ej. `walk_down_left`. Ajustar `pixel_size` (0.025 por defecto) y la altura del nodo para que los pies toquen el suelo. Importar PNGs con filtro Nearest y sin mipmaps.
+
+## Look HD-2D — dónde ajustar
+
+- **`resources/hd2d_environment.tres`**: tonemap Filmic, glow/bloom, SSAO, niebla volumétrica, saturación/contraste, cielo y luz ambiente.
+- **Cámara** (`octopath_camera.gd`, exports en el nodo): `pitch_degrees` (30), `distance` (18), `field_of_view` (30), `follow_smoothing`, y DOF relativo a la distancia (`dof_far_margin`, `dof_near_margin`, transiciones, `dof_blur_amount`). El DOF se recalcula en `_ready()` (o llamando `apply_dof()`), así que los valores del sub-recurso en la escena se sobreescriben.
+- **Sol**: `Sun` en el nivel — `light_angular_distance` controla la suavidad de las sombras (PCSS).
+- **Faroles**: `scenes/props/lamp_placeholder.tscn` (OmniLight3D cálida con sombra y aporte a la niebla).
+- **Viñeta**: `scenes/ui/vignette.tscn` → parámetros del shader (`intensity`, `radius`, `softness`, `vignette_color`).
+- Calidad de sombras en `project.godot` (`[rendering]`).

@@ -1,0 +1,129 @@
+[gd_scene format=3]
+
+[ext_resource type="Environment" path="res://resources/hd2d_environment.tres" id="1_env"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/camera/octopath_camera.tscn" id="3_cam"]
+[ext_resource type="PackedScene" path="res://scenes/props/house_placeholder.tscn" id="4_house"]
+[ext_resource type="PackedScene" path="res://scenes/props/tree_placeholder.tscn" id="5_tree"]
+[ext_resource type="PackedScene" path="res://scenes/props/lamp_placeholder.tscn" id="6_lamp"]
+[ext_resource type="PackedScene" path="res://scenes/ui/vignette.tscn" id="7_vig"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_grass"]
+albedo_color = Color(0.42, 0.55, 0.3, 1)
+roughness = 1.0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+material = SubResource("Mat_grass")
+size = Vector2(80, 80)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(80, 1, 80)
+
+[sub_resource type="StandardMaterial3D" id="Mat_path"]
+albedo_color = Color(0.66, 0.56, 0.42, 1)
+roughness = 1.0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_path_ns"]
+material = SubResource("Mat_path")
+size = Vector2(3, 40)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_path_ew"]
+material = SubResource("Mat_path")
+size = Vector2(36, 3)
+
+[node name="PuebloTest" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("1_env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, 0, -0.5, -0.383, 0.643, -0.663, 0.3215, 0.766, 0.557, 0, 20, 0)
+light_color = Color(1, 0.93, 0.82, 1)
+light_energy = 1.2
+light_angular_distance = 2.0
+light_volumetric_fog_energy = 0.6
+shadow_enabled = true
+shadow_blur = 1.5
+directional_shadow_mode = 1
+directional_shadow_max_distance = 60.0
+
+[node name="Ground" type="StaticBody3D" parent="."]
+
+[node name="Mesh" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("PlaneMesh_ground")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_ground")
+
+[node name="PathNS" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+mesh = SubResource("PlaneMesh_path_ns")
+
+[node name="PathEW" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, 0)
+mesh = SubResource("PlaneMesh_path_ew")
+
+[node name="Houses" type="Node3D" parent="."]
+
+[node name="House1" parent="Houses" instance=ExtResource("4_house")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -6)
+
+[node name="House2" parent="Houses" instance=ExtResource("4_house")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -7)
+
+[node name="House3" parent="Houses" instance=ExtResource("4_house")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -9, 0, 7)
+
+[node name="House4" parent="Houses" instance=ExtResource("4_house")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 9, 0, 6)
+
+[node name="Trees" type="Node3D" parent="."]
+
+[node name="Tree1" parent="Trees" instance=ExtResource("5_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0, -10)
+
+[node name="Tree2" parent="Trees" instance=ExtResource("5_tree")]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, -3, 0, -12)
+
+[node name="Tree3" parent="Trees" instance=ExtResource("5_tree")]
+transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, 3, 0, -13)
+
+[node name="Tree4" parent="Trees" instance=ExtResource("5_tree")]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, 13, 0, -11)
+
+[node name="Tree5" parent="Trees" instance=ExtResource("5_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, 1)
+
+[node name="Tree6" parent="Trees" instance=ExtResource("5_tree")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 14, 0, -1)
+
+[node name="Tree7" parent="Trees" instance=ExtResource("5_tree")]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -4, 0, 10)
+
+[node name="Tree8" parent="Trees" instance=ExtResource("5_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 12)
+
+[node name="Tree9" parent="Trees" instance=ExtResource("5_tree")]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, -15, 0, 12)
+
+[node name="Tree10" parent="Trees" instance=ExtResource("5_tree")]
+transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, 15, 0, 13)
+
+[node name="Lamps" type="Node3D" parent="."]
+
+[node name="Lamp1" parent="Lamps" instance=ExtResource("6_lamp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, -3)
+
+[node name="Lamp2" parent="Lamps" instance=ExtResource("6_lamp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, 3)
+
+[node name="Lamp3" parent="Lamps" instance=ExtResource("6_lamp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 2.5)
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+
+[node name="OctopathCamera" parent="." node_paths=PackedStringArray("target") instance=ExtResource("3_cam")]
+target = NodePath("../Player")
+
+[node name="Vignette" parent="." instance=ExtResource("7_vig")]

@@ -1,0 +1,48 @@
+[gd_resource type="Environment" format=3]
+
+[sub_resource type="ProceduralSkyMaterial" id="Sky_mat"]
+sky_top_color = Color(0.36, 0.5, 0.72, 1)
+sky_horizon_color = Color(0.82, 0.74, 0.62, 1)
+ground_bottom_color = Color(0.2, 0.17, 0.14, 1)
+ground_horizon_color = Color(0.82, 0.74, 0.62, 1)
+sun_angle_max = 20.0
+
+[sub_resource type="Sky" id="Sky_main"]
+sky_material = SubResource("Sky_mat")
+
+[resource]
+background_mode = 2
+sky = SubResource("Sky_main")
+ambient_light_source = 3
+ambient_light_color = Color(0.75, 0.7, 0.65, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 2
+tonemap_exposure = 1.0
+tonemap_white = 6.0
+ssao_enabled = true
+ssao_radius = 1.4
+ssao_intensity = 2.2
+ssao_power = 1.6
+ssao_detail = 0.6
+glow_enabled = true
+glow_levels/1 = 0.5
+glow_levels/2 = 0.8
+glow_levels/3 = 1.0
+glow_levels/5 = 0.6
+glow_intensity = 0.9
+glow_strength = 1.0
+glow_bloom = 0.08
+glow_blend_mode = 1
+glow_hdr_threshold = 0.85
+glow_hdr_scale = 2.0
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.012
+volumetric_fog_albedo = Color(0.95, 0.88, 0.78, 1)
+volumetric_fog_emission = Color(0.04, 0.035, 0.03, 1)
+volumetric_fog_anisotropy = 0.4
+volumetric_fog_length = 80.0
+volumetric_fog_ambient_inject = 0.3
+adjustment_enabled = true
+adjustment_brightness = 1.0
+adjustment_contrast = 1.06
+adjustment_saturation = 1.12
